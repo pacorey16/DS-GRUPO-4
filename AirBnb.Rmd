@@ -1,0 +1,159 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse) 
+library(corrplot)
+```
+```{r}
+calendar <- read.csv("./csv/calendar.csv")
+listings2 <- read.csv("./csv/listings-2.csv")
+listings <- read.csv("./csv/listings.csv")
+neighbourhoods <- read.csv("./csv/neighbourhoods.csv")
+review2 <- read.csv("./csv/reviews-2.csv")
+review <- read.csv("./csv/reviews.csv")
+```
+
+#1.
+```{r}
+head(listings)
+```
+```{r}
+str(listings)
+```
+
+
+```{r}
+
+#Limpieza de PRECIO (Quitar $ y ,)
+# Usamos gsub con regex: [\\$,] busca el signo dolar o la coma
+if (is.character(listings$price)) {
+  listings$price <- as.numeric(gsub("[\\$,]", "", listings$price))
+}
+
+#Limpieza de REVIEWS (Imputar Nulos con 0)
+listings$reviews_per_month[is.na(listings$reviews_per_month)] <- 0
+
+# Verificamos que price ya es numérico
+str(listings$price)
+
+
+```
+
+## EDA Univariante:
+### Distribución del Price 
+Para detectar Outliers
+
+```{r}
+# Gráfico: Histograma
+ggplot(listings, aes(x = price)) +
+  geom_histogram(binwidth = 10, fill = "#69b3a2", color = "white") +
+  theme_minimal() +
+  labs(title = "Distribución de Precios (Crudo)", x = "Precio (€)", y = "Frecuencia")
+
+#Ver los extremos
+print(paste("Mínimo:", min(listings$price, na.rm = TRUE)))
+print(paste("Máximo:", max(listings$price, na.rm = TRUE)))
+
+#Filtrar dataset para el análisis (Quitar < 15 y > 500)
+listings_clean <- listings %>% 
+  filter(price > 15 & price < 500)
+
+# Visualizar de nuevo ya limpio
+ggplot(listings_clean, aes(x = price)) +
+  geom_histogram(binwidth = 10, fill = "steelblue", color = "white") +
+  labs(title = "Distribución de Precios (Filtrado 15€ - 500€)")
+```
+### Conteo de Room Type
+Para ver el desbalanceo
+
+```{r}
+ggplot(listings, aes(x = room_type, fill = room_type)) +
+  geom_bar() +
+  geom_text(stat='count', aes(label=..count..), vjust=-0.5) +
+  theme_minimal() +
+  labs(title = "Conteo por Tipo de Habitación") +
+  theme(legend.position = "none")
+```
+
+### Boxplot de Minimum Nights 
+Para ver valores absurdos
+
+```{r}
+ggplot(listings, aes(y = minimum_nights)) +
+  geom_boxplot(fill = "orange", alpha = 0.5) +
+  scale_y_log10() + # Escala logarítmica vital para ver los de 1000 días
+  theme_minimal() +
+  labs(title = "Detectando Outliers en Noches Mínimas (Escala Log)")
+
+# Ver cuántos superan los 30 días (posibles alquileres de larga estancia)
+sum(listings$minimum_nights > 30)
+```
+
+## EDA Bivariante:
+### Matriz de Correlación
+Aquí detectamos la Multicolinealidad 
+```{r}
+# Seleccionar solo columnas numéricas clave
+nums <- listings_clean %>% 
+  select(price, accommodates, bedrooms, beds, 
+         number_of_reviews, reviews_per_month, availability_365,
+         review_scores_rating) %>%
+  na.omit() # Correlación no funciona con NAs
+
+# Calcular matriz
+M <- cor(nums)
+
+# Graficar Heatmap con corrplot
+corrplot(M, method = "color", type = "upper", 
+         addCoef.col = "black", # Añade los números
+         tl.col = "black", tl.srt = 45, # Color y rotación de texto
+         diag = FALSE, # No mostrar la diagonal principal
+         title = "Matriz de Correlación")
+```
+
+### Price vs Neighbourhood
+```{r}
+# Usamos el dataset limpio (sin precios de 9000€)
+ggplot(listings_clean, aes(x = reorder(neighbourhood_group_cleansed, price, median), y = price)) +
+  geom_boxplot(aes(fill = neighbourhood_group_cleansed), alpha = 0.7) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none") +
+  labs(title = "Precio por Distrito (Ordenado por Mediana)", x = "Distrito")
+```
+### Scatterplot Price vs Reviews
+```{r}
+ggplot(listings_clean, aes(x = reviews_per_month, y = price)) +
+  geom_point(alpha = 0.4, color = "darkblue") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) + # Línea de tendencia opcional
+  theme_minimal() +
+  labs(title = "Relación Precio vs Rotación", x = "Reviews por mes", y = "Precio")
+```
+## EDA Geoespacial:
+### Scatterplot Lat vs Long
+
+```{r}
+# Filtramos coordenadas extremas si es necesario (ej: latitud 0)
+# Sevilla está aprox en Lat 37.4, Lon -6.0
+
+ggplot(listings_clean, aes(x = longitude, y = latitude, color = price)) +
+  geom_point(size = 1, alpha = 0.6) +
+  scale_color_viridis_c(option = "magma", direction = -1) + # Colores oscuros para caro
+  coord_quickmap() + # Mantiene la proporción del mapa
+  theme_void() + # Quita ejes para que parezca un mapa limpio
+  labs(title = "Mapa de Precios en Sevilla", color = "Precio (€)")
+
+# La Trampa: Verificar si hay puntos en el mar (0,0)
+summary(listings$latitude)
+summary(listings$longitude)
+```
+
+
+
+
+
+
+
