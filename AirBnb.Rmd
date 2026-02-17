@@ -2,51 +2,91 @@
 title: "R Notebook"
 output: html_notebook
 ---
+# 1. Introducción y Objetivos
+
+## 1.1. Contexto del Problema
+
+## 1.2. Objetivos del Estudio
+
+## 1.3. Descripción del Dataset
 
 
+# 2. Preprocesamiento y Limpieza de Datos
 ```{r}
 library(tidyverse) 
 library(corrplot)
 ```
+
 ```{r}
-calendar <- read.csv("./csv/calendar.csv")
-listings2 <- read.csv("./csv/listings-2.csv")
 listings <- read.csv("./csv/listings.csv")
-neighbourhoods <- read.csv("./csv/neighbourhoods.csv")
-review2 <- read.csv("./csv/reviews-2.csv")
-review <- read.csv("./csv/reviews.csv")
 ```
 
-#1.
-```{r}
-head(listings)
-```
 ```{r}
 str(listings)
 ```
 
-
+## 2.1. Tratamiento de Variables Críticas
 ```{r}
+listings <- listings %>%
+  # Limpieza de precio: Quitar $ y ,
+  mutate(
+    price = as.numeric(gsub("[\\$,]", "", price))
+  )
 
-#Limpieza de PRECIO (Quitar $ y ,)
-# Usamos gsub con regex: [\\$,] busca el signo dolar o la coma
-if (is.character(listings$price)) {
-  listings$price <- as.numeric(gsub("[\\$,]", "", listings$price))
-}
-
-#Limpieza de REVIEWS (Imputar Nulos con 0)
-listings$reviews_per_month[is.na(listings$reviews_per_month)] <- 0
-
-# Verificamos que price ya es numérico
-str(listings$price)
-
-
+listings_clean <- listings %>%
+  # Limpieza de precio: Quitar $ y ,
+  mutate(
+    price = as.numeric(gsub("[\\$,]", "", price))
+  ) %>%
+  # Limpieza de baños: Extraer el número del texto "1.5 baths"
+  mutate(
+    bath_num = case_when(
+      str_detect(tolower(bathrooms_text), "half-bath") ~ 0.5,
+      TRUE ~ as.numeric(str_extract(bathrooms_text, "\\d+\\.?\\d*"))
+    ),
+    bath_num = ifelse(is.na(bath_num), 1, bath_num) # Si no hay dato, asumimos 1 baño
+  )
 ```
 
-## EDA Univariante:
-### Distribución del Price 
-Para detectar Outliers
 
+## 2.2. Gestión de Valores Ausentes
+```{r}
+listings_clean <- listings_clean %>%
+  # Imputar habitaciones y camas usando la mediana segun el tipo de alojamiento
+  group_by(room_type) %>%
+  mutate(
+    bedrooms = ifelse(is.na(bedrooms), median(bedrooms, na.rm=TRUE), bedrooms),
+    beds = ifelse(is.na(beds), median(beds, na.rm=TRUE), beds)
+  ) %>%
+  ungroup() %>%
+  
+  # Gestionar el numero de reviews vacias 
+  mutate(
+    reviews_per_month = replace_na(reviews_per_month, 0),
+    # Imputamos la media para no perder la fila en modelos predictivos
+    review_scores_rating = replace_na(review_scores_rating, mean(review_scores_rating, na.rm=TRUE))
+  )
+```
+
+## 2.3. Filtrado de Inconsistencias
+
+```{r}
+listings_clean <- listings_clean %>%
+  # Filtro de precio: eliminamos errores (0€) y mansiones extremas (>2000€)
+  filter(price > 10 & price < 2000) %>%
+  
+  # Filtro geoespacial: eliminamos filas sin coordenadas válidas
+  filter(!is.na(latitude) & !is.na(longitude)) %>%
+  
+  #Filtrar estancias de larga duracion 
+  filter(minimum_nights < 365)
+```
+
+# 3. Análisis Exploratorio de Datos
+
+## 3.1. Análisis Univariante
+
+###  3.1.1 Distribución del precio 
 ```{r}
 # Gráfico: Histograma
 ggplot(listings, aes(x = price)) +
@@ -58,18 +98,13 @@ ggplot(listings, aes(x = price)) +
 print(paste("Mínimo:", min(listings$price, na.rm = TRUE)))
 print(paste("Máximo:", max(listings$price, na.rm = TRUE)))
 
-#Filtrar dataset para el análisis (Quitar < 15 y > 500)
-listings_clean <- listings %>% 
-  filter(price > 15 & price < 500)
-
 # Visualizar de nuevo ya limpio
 ggplot(listings_clean, aes(x = price)) +
   geom_histogram(binwidth = 10, fill = "steelblue", color = "white") +
-  labs(title = "Distribución de Precios (Filtrado 15€ - 500€)")
+  labs(title = "Distribución de Precios (Filtrado 10€ - 2000€)")
 ```
-### Conteo de Room Type
-Para ver el desbalanceo
 
+### 3.1.2 Conteo del tipo de habitacion
 ```{r}
 ggplot(listings, aes(x = room_type, fill = room_type)) +
   geom_bar() +
@@ -79,9 +114,7 @@ ggplot(listings, aes(x = room_type, fill = room_type)) +
   theme(legend.position = "none")
 ```
 
-### Boxplot de Minimum Nights 
-Para ver valores absurdos
-
+### 3.1.3 Boxplot de noches minimas
 ```{r}
 ggplot(listings, aes(y = minimum_nights)) +
   geom_boxplot(fill = "orange", alpha = 0.5) +
@@ -93,8 +126,8 @@ ggplot(listings, aes(y = minimum_nights)) +
 sum(listings$minimum_nights > 30)
 ```
 
-## EDA Bivariante:
-### Matriz de Correlación
+## 3.2. Análisis Bivariante
+### 3.2.1 Matriz de Correlación
 Aquí detectamos la Multicolinealidad 
 ```{r}
 # Seleccionar solo columnas numéricas clave
@@ -115,7 +148,7 @@ corrplot(M, method = "color", type = "upper",
          title = "Matriz de Correlación")
 ```
 
-### Price vs Neighbourhood
+### 3.2.2 Price vs Neighbourhood
 ```{r}
 # Usamos el dataset limpio (sin precios de 9000€)
 ggplot(listings_clean, aes(x = reorder(neighbourhood_group_cleansed, price, median), y = price)) +
@@ -124,7 +157,8 @@ ggplot(listings_clean, aes(x = reorder(neighbourhood_group_cleansed, price, medi
   theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none") +
   labs(title = "Precio por Distrito (Ordenado por Mediana)", x = "Distrito")
 ```
-### Scatterplot Price vs Reviews
+
+### 3.2.3 Scatterplot Price vs Reviews
 ```{r}
 ggplot(listings_clean, aes(x = reviews_per_month, y = price)) +
   geom_point(alpha = 0.4, color = "darkblue") +
@@ -132,8 +166,10 @@ ggplot(listings_clean, aes(x = reviews_per_month, y = price)) +
   theme_minimal() +
   labs(title = "Relación Precio vs Rotación", x = "Reviews por mes", y = "Precio")
 ```
-## EDA Geoespacial:
-### Scatterplot Lat vs Long
+
+
+## 3.3. Análisis Geoespacial
+### 3.3.1 Scatterplot latitud vs longitud
 
 ```{r}
 # Filtramos coordenadas extremas si es necesario (ej: latitud 0)
@@ -150,6 +186,17 @@ ggplot(listings_clean, aes(x = longitude, y = latitude, color = price)) +
 summary(listings$latitude)
 summary(listings$longitude)
 ```
+
+# 4. Análisis Grupal
+
+## 4.1. Segmentación del Mercado
+
+## 4.2. Determinantes del Precio
+
+## 4.3. El "Efecto Giralda"
+
+
+
 
 
 
