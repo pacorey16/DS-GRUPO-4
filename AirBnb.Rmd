@@ -1,7 +1,8 @@
 ---
-title: "R Notebook"
+title: "R Notebook - Airbnb Sevilla"
 output: html_notebook
 ---
+
 # 1. Introducción y Objetivos
 
 ## 1.1. Contexto del Problema
@@ -10,8 +11,48 @@ output: html_notebook
 
 ## 1.3. Descripción del Dataset
 
+# 2. Selección de variables y preprocesamiento de datos
 
-# 2. Preprocesamiento y Limpieza de Datos
+El dataset original de Airbnb (`listings.csv`) cuenta con **79 variables** y más de 8.000 observaciones. Gran parte de esta información consiste en metadatos técnicos (`scrape_id`), textos no estructurados (`description`, `urls`) o redundancias que introducen ruido en nuestro análisis.
+
+Para abordar las tres preguntas de negocio planteadas (Segmentación por barrio, Predicción de Precio y Análisis Geoespacial), hemos ejecutado una **selección estratégica de características (Feature Selection)**. Hemos reducido la dimensionalidad del dataset a **19 variables clave**, agrupadas en cuatro dimensiones funcionales que explican la varianza del mercado:
+
+#### **A. Dimensiones Estructurales ("El Hardware")**
+
+Variables necesarias para estandarizar la comparación entre alojamientos heterogéneos.
+
+-   **`room_type`**, **`accommodates`**, **`bedrooms`**: Definen la capacidad real y el modelo de alojamiento (privado vs. compartido). Son los predictores base del precio.
+
+-   **`bathrooms_text`**: Seleccionada para ingeniería de características. El número de baños es un indicador crítico de lujo/gama alta que a menudo se omite en análisis básicos.
+
+-   **`amenities`**: Aunque es texto, la transformaremos para cuantificar el "valor añadido" (piscina, aire acondicionado) que justifica sobreprecios.
+
+#### **B. Dimensiones Económicas y de Gestión ("El Negocio")**
+
+Variables que permiten perfilar el comportamiento del anfitrión (Profesional vs. Particular).
+
+-   **`price`**: Variable objetivo principal. Requiere limpieza de caracteres (`$`, `,`) para su tratamiento numérico.
+
+-   **`availability_365`**: Proxy de dedicación. Distingue entre negocios de dedicación exclusiva y alquileres esporádicos.
+
+-   **`calculated_host_listings_count`** e **`instant_bookable`**: Métricas de profesionalización. Un anfitrión con múltiples propiedades y reserva inmediata tiene un perfil de riesgo y rotación distinto.
+
+#### **C. Dimensiones de Reputación y Calidad ("El Valor Percibido")**
+
+Cruciales para el Clustering y para explicar outliers de precio.
+
+-   **`reviews_per_month`**: El mejor indicador de la demanda actual y la rotación del activo.
+
+-   **`review_scores_rating`**, **`_cleanliness`**, **`_location`**: Variables de calidad subjetiva. Permiten detectar alojamientos "sobrevalorados" (caros pero con mala nota) o "joyas ocultas".
+
+#### **D. Dimensiones Geoespaciales ("La Ubicación")**
+
+Necesarias para el análisis continuo del espacio urbano.
+
+-   **`latitude`** / **`longitude`**: Materia prima para el cálculo de distancia euclídea/haversine a la Giralda (Pregunta 3).
+
+-   **`neighbourhood_cleansed`**: Para establecer la línea base de precios por zona administrativa (Pregunta 2).
+
 ```{r}
 library(tidyverse) 
 library(corrplot)
@@ -25,47 +66,116 @@ listings <- read.csv("./csv/listings.csv")
 str(listings)
 ```
 
-## 2.1. Tratamiento de Variables Críticas
 ```{r}
-listings <- listings %>%
-  # Limpieza de precio: Quitar $ y ,
-  mutate(
-    price = as.numeric(gsub("[\\$,]", "", price))
+# 1. SELECCIÓN DE COLUMNAS (Incluyendo minimum_nights)
+df_raw_selected <- listings %>%
+  select(
+    # Identificador
+    id, 
+    
+    # Variables Nucleares (Precios, Tipo y Estancia)
+    price, 
+    room_type, 
+    accommodates, 
+    minimum_nights, 
+    
+    # Variables Estructurales
+    bathrooms_text, 
+    bedrooms, 
+    amenities,
+    
+    # Ubicación
+    neighbourhood_cleansed, 
+    latitude, 
+    longitude,
+    
+    # Actividad y Reputación
+    reviews_per_month, 
+    number_of_reviews,
+    review_scores_rating, 
+    review_scores_cleanliness, 
+    review_scores_location,
+    
+    # Gestión
+    availability_365, 
+    calculated_host_listings_count, 
+    instant_bookable
   )
 
-listings_clean <- listings %>%
-  # Limpieza de precio: Quitar $ y ,
-  mutate(
-    price = as.numeric(gsub("[\\$,]", "", price))
-  ) %>%
-  # Limpieza de baños: Extraer el número del texto "1.5 baths"
-  mutate(
-    bath_num = case_when(
-      str_detect(tolower(bathrooms_text), "half-bath") ~ 0.5,
-      TRUE ~ as.numeric(str_extract(bathrooms_text, "\\d+\\.?\\d*"))
-    ),
-    bath_num = ifelse(is.na(bath_num), 1, bath_num) # Si no hay dato, asumimos 1 baño
-  )
+print(paste("Columnas seleccionadas:", ncol(df_raw_selected)))
 ```
 
+## 2.1. Preprocesado de Variables Críticas
 
-## 2.2. Gestión de Valores Ausentes
 ```{r}
-listings_clean <- listings_clean %>%
-  # Imputar habitaciones y camas usando la mediana segun el tipo de alojamiento
-  group_by(room_type) %>%
-  mutate(
-    bedrooms = ifelse(is.na(bedrooms), median(bedrooms, na.rm=TRUE), bedrooms),
-    beds = ifelse(is.na(beds), median(beds, na.rm=TRUE), beds)
-  ) %>%
-  ungroup() %>%
+df_final <- df_raw_selected %>%
   
-  # Gestionar el numero de reviews vacias 
+  # --- 1. LIMPIEZA DE PRECIO ---
+  mutate(
+    price_clean = as.numeric(gsub("[\\$,]", "", price))
+  ) %>%
+  # Filtrar precios coherentes
+  filter(price_clean > 10 & price_clean < 1000) %>%
+  
+  # --- 2. LIMPIEZA DE BAÑOS ---
+  mutate(
+    bathrooms_qty = as.numeric(str_extract(bathrooms_text, "\\d+(\\.\\d+)?")),
+    bathrooms_qty = ifelse(is.na(bathrooms_qty) & str_detect(bathrooms_text, "Half-bath"), 0.5, bathrooms_qty),
+    bathrooms_qty = ifelse(is.na(bathrooms_qty), 1, bathrooms_qty)
+  ) %>%
+  
+  # --- 3. INGENIERÍA DE AMENITIES ---
+  mutate(
+    amenities_count = str_count(amenities, ",") + 1,
+    has_pool = as.integer(str_detect(amenities, regex("pool", ignore_case = TRUE))),
+    has_ac = as.integer(str_detect(amenities, regex("air conditioning|ac", ignore_case = TRUE)))
+  ) %>%
+  
+  # --- 4. TRATAMIENTO DE NULOS Y LIMPIEZA DE minimum_nights ---
   mutate(
     reviews_per_month = replace_na(reviews_per_month, 0),
-    # Imputamos la media para no perder la fila en modelos predictivos
-    review_scores_rating = replace_na(review_scores_rating, mean(review_scores_rating, na.rm=TRUE))
+    bedrooms = ifelse(is.na(bedrooms), median(bedrooms, na.rm = TRUE), bedrooms),
+    review_scores_rating = ifelse(is.na(review_scores_rating), mean(review_scores_rating, na.rm = TRUE), review_scores_rating),
+    review_scores_cleanliness = ifelse(is.na(review_scores_cleanliness), mean(review_scores_cleanliness, na.rm = TRUE), review_scores_cleanliness),
+    review_scores_location = ifelse(is.na(review_scores_location), mean(review_scores_location, na.rm = TRUE), review_scores_location),
+    instant_bookable_binary = ifelse(instant_bookable == "t", 1, 0),
+    
+    # LIMPIEZA DE MINIMUM_NIGHTS
+    # Si viene vacía (raro), asumimos 1 noche.
+    minimum_nights = ifelse(is.na(minimum_nights), 1, minimum_nights),
+    
+    # Opcional: Si quieres evitar errores extremos (ej. alguien puso 1000 noches por error),
+    # puedes descomentar la siguiente línea para toparlo en 365 días:
+    # minimum_nights = ifelse(minimum_nights > 365, 365, minimum_nights)
+  ) %>%
+  
+  # --- 5. SELECCIÓN FINAL ---
+  select(
+    id, 
+    price = price_clean, 
+    room_type, 
+    accommodates, 
+    minimum_nights, # <--- Se mantiene en el dataset final
+    bedrooms, 
+    bathrooms = bathrooms_qty, 
+    amenities_count, has_pool, has_ac, 
+    neighbourhood_cleansed, 
+    latitude, longitude, 
+    reviews_per_month, number_of_reviews, 
+    review_scores_rating, review_scores_cleanliness, review_scores_location,
+    availability_365, calculated_host_listings_count, 
+    instant_bookable = instant_bookable_binary
   )
+
+# Verificar
+glimpse(df_final)
+summary(df_final$minimum_nights)
+```
+
+## 
+
+```{r}
+head(df_final)
 ```
 
 ## 2.3. Filtrado de Inconsistencias
@@ -86,7 +196,8 @@ listings_clean <- listings_clean %>%
 
 ## 3.1. Análisis Univariante
 
-###  3.1.1 Distribución del precio 
+### 3.1.1 Distribución del precio
+
 ```{r}
 # Gráfico: Histograma
 ggplot(listings, aes(x = price)) +
@@ -105,6 +216,7 @@ ggplot(listings_clean, aes(x = price)) +
 ```
 
 ### 3.1.2 Conteo del tipo de habitacion
+
 ```{r}
 ggplot(listings, aes(x = room_type, fill = room_type)) +
   geom_bar() +
@@ -115,6 +227,7 @@ ggplot(listings, aes(x = room_type, fill = room_type)) +
 ```
 
 ### 3.1.3 Boxplot de noches minimas
+
 ```{r}
 ggplot(listings, aes(y = minimum_nights)) +
   geom_boxplot(fill = "orange", alpha = 0.5) +
@@ -127,8 +240,11 @@ sum(listings$minimum_nights > 30)
 ```
 
 ## 3.2. Análisis Bivariante
+
 ### 3.2.1 Matriz de Correlación
-Aquí detectamos la Multicolinealidad 
+
+Aquí detectamos la Multicolinealidad
+
 ```{r}
 # Seleccionar solo columnas numéricas clave
 nums <- listings_clean %>% 
@@ -149,6 +265,7 @@ corrplot(M, method = "color", type = "upper",
 ```
 
 ### 3.2.2 Price vs Neighbourhood
+
 ```{r}
 # Usamos el dataset limpio (sin precios de 9000€)
 ggplot(listings_clean, aes(x = reorder(neighbourhood_group_cleansed, price, median), y = price)) +
@@ -159,6 +276,7 @@ ggplot(listings_clean, aes(x = reorder(neighbourhood_group_cleansed, price, medi
 ```
 
 ### 3.2.3 Scatterplot Price vs Reviews
+
 ```{r}
 ggplot(listings_clean, aes(x = reviews_per_month, y = price)) +
   geom_point(alpha = 0.4, color = "darkblue") +
@@ -167,8 +285,8 @@ ggplot(listings_clean, aes(x = reviews_per_month, y = price)) +
   labs(title = "Relación Precio vs Rotación", x = "Reviews por mes", y = "Precio")
 ```
 
-
 ## 3.3. Análisis Geoespacial
+
 ### 3.3.1 Scatterplot latitud vs longitud
 
 ```{r}
@@ -194,13 +312,3 @@ summary(listings$longitude)
 ## 4.2. Determinantes del Precio
 
 ## 4.3. El "Efecto Giralda"
-
-
-
-
-
-
-
-
-
-
