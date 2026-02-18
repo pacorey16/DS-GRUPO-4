@@ -66,20 +66,110 @@ listings <- read.csv("./csv/listings.csv")
 str(listings)
 ```
 
+Antes de proceder al preprocesamiento, realizamos una inspección técnica del dataset crudo. De esta forma podemos analizar aspectos claves como:
+
+-   Duplicidad
+
+-   Missing values
+
+-   Consistencia
+
 ```{r}
-# 1. SELECCIÓN DE COLUMNAS (Incluyendo minimum_nights)
+# 1. ESTRUCTURA
+print("--- Dimensiones del Dataset ---")
+dim(listings) # Filas x Columnas
+
+# 2. CHECK DE DUPLICADOS
+duplicados_totales <- sum(duplicated(listings))
+duplicados_id <- sum(duplicated(listings$id))
+
+print(paste("Filas totalmente duplicadas:", duplicados_totales))
+print(paste("IDs repetidos (mismo piso scrapeado varias veces):", duplicados_id))
+
+# 3. MISSING VALUES
+na_count <- colSums(is.na(listings))
+na_percent <- (na_count / nrow(listings)) * 100
+
+# Mostrar las 10 columnas con más nulos
+print("--- Top 10 Columnas con más Nulos (%) ---")
+print(sort(na_percent, decreasing = TRUE)[1:10])
+
+# 4. Variables clave Room Type y Precios
+# Ver si hay categorías raras antes de limpiar
+print("--- Categorías únicas en Room Type ---")
+print(table(listings$room_type))
+
+# Ver formato del precio por si hay que limpiar
+print("--- Ejemplo de Precios en crudo ---")
+print(head(listings$price))
+```
+
+## 2.1. EDA inicial
+
+En este punto hemos realizado un EDA pequeño, para hacernos una idea de donde partíamos, con qué tipo de datos tratamos, formato, valores nulos, incongruencias, en definitiva, qué sobra y qué nos parece interesante tratar y preprocesar en detalle.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# GRÁFICO 1: EL "MONSTRUO" DE LOS PRECIOS
+# Necesitamos convertir el precio a número "en sucio" solo para poder pintarlo
+# (Sin modificar el dataset original todavía)
+precios_sucios <- as.numeric(gsub("[\\$,]", "", listings$price))
+
+# Creamos un dataframe temporal solo para este gráfico
+df_plot_sucio <- data.frame(precio = precios_sucios)
+
+ggplot(df_plot_sucio, aes(x = precio)) +
+  geom_histogram(binwidth = 50, fill = "red", color = "black", alpha = 0.6) +
+  theme_minimal() +
+  labs(
+    title = "Distribución Original de Precios (Sin Limpiar)",
+    subtitle = "Extrema asimetría debido a outliers (pisos de 5.000€+)",
+    x = "Precio (Crudo)",
+    y = "Frecuencia"
+  ) +
+  annotate("text", x = 4000, y = 500, label = "Outliers Extremos\n(Distorsionan el modelo)", color = "red", fontface="bold")
+
+# GRÁFICO 2: MAPA DE CALOR DE DATOS FALTANTES (NULOS)
+# Calculamos el % de nulos por columna
+na_summary <- data.frame(
+  columna = names(listings),
+  na_pct = colSums(is.na(listings)) / nrow(listings) * 100
+) %>%
+  filter(na_pct > 0) %>% # Solo mostramos las que tienen nulos
+  arrange(desc(na_pct)) # Ordenamos de mayor a menor
+
+# Pintamos solo las columnas problemáticas
+ggplot(na_summary, aes(x = reorder(columna, na_pct), y = na_pct)) +
+  geom_bar(stat = "identity", fill = "orange", width = 0.7) +
+  coord_flip() + # Giramos para leer los nombres
+  theme_minimal() +
+  labs(
+    title = "Porcentaje de Valores Nulos por Variable",
+    subtitle = "Variables como 'calendar_updated' está vacía",
+    x = "Variable",
+    y = "% de Nulos"
+  ) +
+  geom_text(aes(label = round(na_pct, 1)), hjust = -0.2, size = 3)
+```
+
+Tras este pequeño análisis decidimos seleccionar las columnas que nos impactan. Así, podemos centrarnos en analizar profundamente solo las variables necesarias, y hacer el preprocesado detallado y centrado en nuestro caso concreto y no extendernos en algo que nos nos dará fruto para resolver nuestra hipótesis planteadas.
+
+```{r}
+# 1. SELECCIÓN DE COLUMNAS
 df_raw_selected <- listings %>%
   select(
     # Identificador
     id, 
     
-    # Variables Nucleares (Precios, Tipo y Estancia)
+    # Variables clave (Precios, Tipo y Estancia)
     price, 
     room_type, 
     accommodates, 
     minimum_nights, 
     
-    # Variables Estructurales
+    # Variables estructurales
     bathrooms_text, 
     bedrooms, 
     amenities,
@@ -89,7 +179,7 @@ df_raw_selected <- listings %>%
     latitude, 
     longitude,
     
-    # Actividad y Reputación
+    # Actividad y reputación
     reviews_per_month, 
     number_of_reviews,
     review_scores_rating, 
@@ -105,7 +195,7 @@ df_raw_selected <- listings %>%
 print(paste("Columnas seleccionadas:", ncol(df_raw_selected)))
 ```
 
-## 2.1. Preprocesado de Variables Críticas
+## 2.2. Preprocesado de Variables Críticas
 
 ```{r}
 df_final <- df_raw_selected %>%
@@ -117,11 +207,16 @@ df_final <- df_raw_selected %>%
   # Filtrar precios coherentes
   filter(price_clean > 10 & price_clean < 1000) %>%
   
-  # --- 2. LIMPIEZA DE BAÑOS ---
+  # --- 2. LIMPIEZA DE BAÑOS (VERSIÓN MEJORADA) ---
   mutate(
+    # 2.1. Sacamos el NÚMERO (Cantidad)
     bathrooms_qty = as.numeric(str_extract(bathrooms_text, "\\d+(\\.\\d+)?")),
     bathrooms_qty = ifelse(is.na(bathrooms_qty) & str_detect(bathrooms_text, "Half-bath"), 0.5, bathrooms_qty),
-    bathrooms_qty = ifelse(is.na(bathrooms_qty), 1, bathrooms_qty)
+    bathrooms_qty = ifelse(is.na(bathrooms_qty), 1, bathrooms_qty),
+    
+    # 2.2. Sacamos la PRIVACIDAD (Calidad)
+    # Si detecta "shared", pone un 1. Si no, un 0.
+    bath_shared = ifelse(str_detect(bathrooms_text, regex("shared", ignore_case = TRUE)), 1, 0)
   ) %>%
   
   # --- 3. INGENIERÍA DE AMENITIES ---
@@ -131,7 +226,7 @@ df_final <- df_raw_selected %>%
     has_ac = as.integer(str_detect(amenities, regex("air conditioning|ac", ignore_case = TRUE)))
   ) %>%
   
-  # --- 4. TRATAMIENTO DE NULOS Y LIMPIEZA DE minimum_nights ---
+  # --- 4. TRATAMIENTO DE NULOS ---
   mutate(
     reviews_per_month = replace_na(reviews_per_month, 0),
     bedrooms = ifelse(is.na(bedrooms), median(bedrooms, na.rm = TRUE), bedrooms),
@@ -141,12 +236,7 @@ df_final <- df_raw_selected %>%
     instant_bookable_binary = ifelse(instant_bookable == "t", 1, 0),
     
     # LIMPIEZA DE MINIMUM_NIGHTS
-    # Si viene vacía (raro), asumimos 1 noche.
-    minimum_nights = ifelse(is.na(minimum_nights), 1, minimum_nights),
-    
-    # Opcional: Si quieres evitar errores extremos (ej. alguien puso 1000 noches por error),
-    # puedes descomentar la siguiente línea para toparlo en 365 días:
-    # minimum_nights = ifelse(minimum_nights > 365, 365, minimum_nights)
+    minimum_nights = ifelse(is.na(minimum_nights), 1, minimum_nights)
   ) %>%
   
   # --- 5. SELECCIÓN FINAL ---
@@ -155,9 +245,10 @@ df_final <- df_raw_selected %>%
     price = price_clean, 
     room_type, 
     accommodates, 
-    minimum_nights, # <--- Se mantiene en el dataset final
+    minimum_nights, 
     bedrooms, 
     bathrooms = bathrooms_qty, 
+    bath_shared, 
     amenities_count, has_pool, has_ac, 
     neighbourhood_cleansed, 
     latitude, longitude, 
@@ -165,14 +256,53 @@ df_final <- df_raw_selected %>%
     review_scores_rating, review_scores_cleanliness, review_scores_location,
     availability_365, calculated_host_listings_count, 
     instant_bookable = instant_bookable_binary
+  ) %>%
+
+  # --- 6. CONVERSIÓN A FACTORES (LO NUEVO) ---
+  # Convertimos texto y binarios a categorías para que R los entienda bien en los gráficos
+  mutate(
+    room_type = as.factor(room_type),
+    neighbourhood_cleansed = as.factor(neighbourhood_cleansed)
   )
 
-# Verificar
+# Verificar estructura final
 glimpse(df_final)
 summary(df_final$minimum_nights)
 ```
 
-## 
+Para garantizar la robustez de los modelos posteriores (Clustering y Regresión), hemos implementado una transformación sobre el dataset original (`df_raw_selected`). Las operaciones realizadas son las siguientes:
+
+**1. Limpieza y Filtrado de la Variable Objetivo (`Price`)** La variable precio original contenía caracteres no numéricos (`$` y `,`). Se ha convertido a tipo numérico y posterior filtrado.
+
+-   **Decisión:** Se han eliminado registros con precios inferiores a **10€** (errores de carga o precios ínfimos) y superiores a **1.000€** (outliers extremos/mansiones).\
+    \
+    Esto reduce la asimetría de la distribución y evita que los valores extremos distorsionen la media y los centroides en el análisis de K-Means.
+
+**2. Extracción de Información Estructural (`Bathrooms`)** La columna `bathrooms_text` presentaba información no estructurada (ej. *"1.5 baths"*). Hemos realizado las siguientes acciones:
+
+-   Extraído el valor numérico.
+
+-   Hemos imputado el valor **0.5** para los casos etiquetados como *"Half-bath"*.
+
+-   Hemos asumido un valor estándar de **1** baño para los valores nulos restantes.
+
+**3. Características de Servicios (`Amenities`)** La columna `amenities` es una lista de texto JSON compleja, muy interesante porque podemos recoger qué características "deluxe" tienen los pisos. Para ello, hemos creado tres nuevas variables sintéticas y asi cuantificar el valor añadido:
+
+-   **`amenities_count`**: Conteo del número total de servicios ofrecidos, como indicador general del nivel de equipamiento.
+
+-   **`has_pool`** y **`has_ac`**: Variables binarias (1/0) creadas mediante búsqueda de patrones de texto. Consideramos que en un sitio como Sevilla, la piscina y el aire acondicionado son críticos para el precio (Pregunta 2).
+
+**4. Estrategia seguida para la Imputación de Valores Nulos** Para no perder observaciones valiosas, hemos aplicado una estrategia de imputación diferente, según cada variable:
+
+-   **Actividad (`reviews_per_month`):** Los nulos se imputan con **0**, interpretando la ausencia de dato como actividad nula.
+
+-   **Estructural (`bedrooms`):** Se imputa con la **mediana**, al ser una medida más robusta frente a valores atípicos en variables de conteo entero.
+
+-   **Calidad (`review_scores`):** Se imputa con la **media** global para mantener la neutralidad de la observación sin penalizarla artificialmente.
+
+-   **Noches minimas (`minimum_nights`**): Se imputan los nulos con **1**, asumiendo la estancia mínima estándar.
+
+**5. Selección y Renombrado Final** : hemos generado el dataset `df_final` descartando las variables intermedias sucias (como `bathrooms_text` o el `price` original) y reteniendo únicamente las **19 variables limpias y transformadas** que necesitaremos para trabajar los tres modelos del proyecto.
 
 ```{r}
 head(df_final)
@@ -181,15 +311,22 @@ head(df_final)
 ## 2.3. Filtrado de Inconsistencias
 
 ```{r}
-listings_clean <- listings_clean %>%
-  # Filtro de precio: eliminamos errores (0€) y mansiones extremas (>2000€)
+# --- 2.3. FILTRADO DE INCONSISTENCIAS Y OUTLIERS ---
+# Partimos de df_final que ya tiene las variables limpias (baños, amenities, etc.)
+
+df_eda <- df_final %>%
+  # A. Filtro de Precio: Ajustamos a tu rango (10€ - 2.000€)
   filter(price > 10 & price < 2000) %>%
   
-  # Filtro geoespacial: eliminamos filas sin coordenadas válidas
+  # B. Filtro Geoespacial: Seguridad por si falló algo
   filter(!is.na(latitude) & !is.na(longitude)) %>%
   
-  #Filtrar estancias de larga duracion 
+  # C. Filtro de Estancias: Eliminamos alquileres de año completo (posibles errores)
   filter(minimum_nights < 365)
+
+# Ver cuántas filas nos quedan vs las originales
+print(paste("Observaciones originales:", nrow(df_final)))
+print(paste("Observaciones para análisis (df_eda):", nrow(df_eda)))
 ```
 
 # 3. Análisis Exploratorio de Datos
@@ -199,44 +336,41 @@ listings_clean <- listings_clean %>%
 ### 3.1.1 Distribución del precio
 
 ```{r}
-# Gráfico: Histograma
-ggplot(listings, aes(x = price)) +
-  geom_histogram(binwidth = 10, fill = "#69b3a2", color = "white") +
-  theme_minimal() +
-  labs(title = "Distribución de Precios (Crudo)", x = "Precio (€)", y = "Frecuencia")
-
-#Ver los extremos
-print(paste("Mínimo:", min(listings$price, na.rm = TRUE)))
-print(paste("Máximo:", max(listings$price, na.rm = TRUE)))
-
-# Visualizar de nuevo ya limpio
-ggplot(listings_clean, aes(x = price)) +
+# 3.1.1 Distribución del Precio
+ggplot(df_eda, aes(x = price)) +
   geom_histogram(binwidth = 10, fill = "steelblue", color = "white") +
-  labs(title = "Distribución de Precios (Filtrado 10€ - 2000€)")
+  theme_minimal() +
+  labs(title = "Distribución de Precios (Filtrado 10€ - 2000€)", 
+       subtitle = "La mayoría del mercado se concentra bajo los 200€",
+       x = "Precio (€)", y = "Frecuencia")
+
 ```
 
 ### 3.1.2 Conteo del tipo de habitacion
 
 ```{r}
-ggplot(listings, aes(x = room_type, fill = room_type)) +
+# 3.1.2 Conteo por Tipo de Habitación
+ggplot(df_eda, aes(x = room_type, fill = room_type)) +
   geom_bar() +
   geom_text(stat='count', aes(label=..count..), vjust=-0.5) +
   theme_minimal() +
-  labs(title = "Conteo por Tipo de Habitación") +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(title = "Oferta por Tipo de Alojamiento") +
   theme(legend.position = "none")
 ```
 
 ### 3.1.3 Boxplot de noches minimas
 
 ```{r}
-ggplot(listings, aes(y = minimum_nights)) +
-  geom_boxplot(fill = "orange", alpha = 0.5) +
-  scale_y_log10() + # Escala logarítmica vital para ver los de 1000 días
+# 3.1.3 (NUEVO) Distribución de Servicios (Amenities Count)
+# Importante para justificar que hay pisos "pelados" y pisos "equipados"
+ggplot(df_eda, aes(x = amenities_count)) +
+  geom_histogram(binwidth = 2, fill = "purple", alpha = 0.7) +
   theme_minimal() +
-  labs(title = "Detectando Outliers en Noches Mínimas (Escala Log)")
+  labs(title = "Distribución de Equipamiento (Amenities)", 
+       x = "Cantidad de Servicios", y = "Nº Alojamientos")
 
-# Ver cuántos superan los 30 días (posibles alquileres de larga estancia)
-sum(listings$minimum_nights > 30)
+
 ```
 
 ## 3.2. Análisis Bivariante
@@ -246,63 +380,76 @@ sum(listings$minimum_nights > 30)
 Aquí detectamos la Multicolinealidad
 
 ```{r}
-# Seleccionar solo columnas numéricas clave
-nums <- listings_clean %>% 
-  select(price, accommodates, bedrooms, beds, 
-         number_of_reviews, reviews_per_month, availability_365,
-         review_scores_rating) %>%
-  na.omit() # Correlación no funciona con NAs
+# 3.2.1 Matriz de Correlación (Usando las nuevas variables numéricas)
+library(corrplot)
 
-# Calcular matriz
+# Seleccionamos las numéricas clave del nuevo dataset
+nums <- df_eda %>% 
+  select(price, accommodates, bedrooms, bathrooms, # Tu variable limpia
+         amenities_count, minimum_nights,          # Tus variables nuevas
+         number_of_reviews, reviews_per_month, 
+         review_scores_rating) %>%
+  na.omit()
+
 M <- cor(nums)
 
-# Graficar Heatmap con corrplot
 corrplot(M, method = "color", type = "upper", 
-         addCoef.col = "black", # Añade los números
-         tl.col = "black", tl.srt = 45, # Color y rotación de texto
-         diag = FALSE, # No mostrar la diagonal principal
-         title = "Matriz de Correlación")
+         addCoef.col = "black", number.cex = 0.7, # Tamaño letra números
+         tl.col = "black", tl.srt = 45, 
+         diag = FALSE,
+         title = "Matriz de Correlación (Variables Finales)", 
+         mar = c(0,0,1,0)) # Ajuste de margen para el título
+
+
 ```
 
-### 3.2.2 Price vs Neighbourhood
+### 3.2.2 Impacto del Baño Compartido
 
 ```{r}
-# Usamos el dataset limpio (sin precios de 9000€)
-ggplot(listings_clean, aes(x = reorder(neighbourhood_group_cleansed, price, median), y = price)) +
-  geom_boxplot(aes(fill = neighbourhood_group_cleansed), alpha = 0.7) +
+# 3.2.2 Impacto del Baño Compartido
+# Esto valida visualmente si 'bath_shared' afecta al precio
+ggplot(df_eda, aes(x = as.factor(bath_shared), y = price, fill = as.factor(bath_shared))) +
+  geom_boxplot(alpha = 0.7) +
+  scale_x_discrete(labels = c("0" = "Privado", "1" = "Compartido")) +
+  scale_fill_manual(values = c("#00AFBB", "#FC4E07")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none") +
-  labs(title = "Precio por Distrito (Ordenado por Mediana)", x = "Distrito")
+  ylim(0, 300) + # Zoom para ver mejor las cajas (ignorando mansiones)
+  labs(title = "Impacto del Baño Compartido en el Precio", 
+       x = "Tipo de Baño", y = "Precio (€)", fill = "")
+
+
 ```
 
 ### 3.2.3 Scatterplot Price vs Reviews
 
 ```{r}
-ggplot(listings_clean, aes(x = reviews_per_month, y = price)) +
-  geom_point(alpha = 0.4, color = "darkblue") +
-  geom_smooth(method = "lm", color = "red", se = FALSE) + # Línea de tendencia opcional
+# 3.2.3 Precio vs Reviews (Rotación)
+ggplot(df_eda, aes(x = reviews_per_month, y = price)) +
+  geom_point(alpha = 0.3, color = "darkblue") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
   theme_minimal() +
-  labs(title = "Relación Precio vs Rotación", x = "Reviews por mes", y = "Precio")
+  labs(title = "Relación Precio vs Rotación", x = "Reviews/mes", y = "Precio")
 ```
 
 ## 3.3. Análisis Geoespacial
 
-### 3.3.1 Scatterplot latitud vs longitud
+### 3.3.1 Mapa de Precios con la Giralda
 
 ```{r}
-# Filtramos coordenadas extremas si es necesario (ej: latitud 0)
-# Sevilla está aprox en Lat 37.4, Lon -6.0
-
-ggplot(listings_clean, aes(x = longitude, y = latitude, color = price)) +
-  geom_point(size = 1, alpha = 0.6) +
-  scale_color_viridis_c(option = "magma", direction = -1) + # Colores oscuros para caro
-  coord_quickmap() + # Mantiene la proporción del mapa
-  theme_void() + # Quita ejes para que parezca un mapa limpio
-  labs(title = "Mapa de Precios en Sevilla", color = "Precio (€)")
-
-# La Trampa: Verificar si hay puntos en el mar (0,0)
-summary(listings$latitude)
-summary(listings$longitude)
+# 3.3.1 Mapa de Precios con la Giralda
+ggplot(df_eda, aes(x = longitude, y = latitude, color = price)) +
+  geom_point(size = 0.8, alpha = 0.6) +
+  
+  # AÑADIR LA GIRALDA - Punto de referencia
+  annotate("point", x = -5.99238, y = 37.38614, color = "yellow", size = 3, shape = 17) + 
+  annotate("text", x = -5.99238, y = 37.38614, label = "Giralda", vjust = -1.5, color = "yellow", fontface = "bold", size=3) +
+  
+  scale_color_viridis_c(option = "magma", direction = -1, limits = c(0, 300), oob = scales::squish) + 
+  # limits=c(0,300) hace que los colores se centren en pisos normales, oob=squish pinta los caros del color máximo
+  
+  coord_quickmap() +
+  theme_void() +
+  labs(title = "Mapa de Precios Sevilla Centro", color = "Precio")
 ```
 
 # 4. Análisis Grupal
