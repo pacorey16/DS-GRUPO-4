@@ -315,8 +315,8 @@ head(df_final)
 # Partimos de df_final que ya tiene las variables limpias (baños, amenities, etc.)
 
 df_eda <- df_final %>%
-  # A. Filtro de Precio: Ajustamos a tu rango (10€ - 2.000€)
-  filter(price > 10 & price < 2000) %>%
+  # A. Filtro de Precio: Ajustamos a tu rango (10€ - 1.000€)
+  filter(price > 10 & price < 1000) %>%
   
   # B. Filtro Geoespacial: Seguridad por si falló algo
   filter(!is.na(latitude) & !is.na(longitude)) %>%
@@ -340,7 +340,7 @@ print(paste("Observaciones para análisis (df_eda):", nrow(df_eda)))
 ggplot(df_eda, aes(x = price)) +
   geom_histogram(binwidth = 10, fill = "steelblue", color = "white") +
   theme_minimal() +
-  labs(title = "Distribución de Precios (Filtrado 10€ - 2000€)", 
+  labs(title = "Distribución de Precios (Filtrado 10€ - 1000€)", 
        subtitle = "La mayoría del mercado se concentra bajo los 200€",
        x = "Precio (€)", y = "Frecuencia")
 
