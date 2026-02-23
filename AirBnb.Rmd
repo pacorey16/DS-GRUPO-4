@@ -254,23 +254,25 @@ df_final <- df_raw_selected %>%
   # --- 3. INGENIERÍA DE AMENITIES ---
   mutate(
     amenities_count = str_count(amenities, ",") + 1,
+    amenities_count = ifelse(is.na(amenities) | amenities == "" | amenities == "[]", 0, amenities_count),
     has_pool = as.integer(str_detect(amenities, regex("pool", ignore_case = TRUE))),
     has_ac = as.integer(str_detect(amenities, regex("air conditioning|ac", ignore_case = TRUE)))
   ) %>%
   
   # --- 4. TRATAMIENTO DE NULOS ---
-  mutate(
-    reviews_per_month = replace_na(reviews_per_month, 0),
-    bedrooms = ifelse(is.na(bedrooms), median(bedrooms, na.rm = TRUE), bedrooms),
-    review_scores_rating = ifelse(is.na(review_scores_rating), mean(review_scores_rating, na.rm = TRUE), review_scores_rating),
-    review_scores_cleanliness = ifelse(is.na(review_scores_cleanliness), mean(review_scores_cleanliness, na.rm = TRUE), review_scores_cleanliness),
-    review_scores_location = ifelse(is.na(review_scores_location), mean(review_scores_location, na.rm = TRUE), review_scores_location),
-    instant_bookable_binary = ifelse(instant_bookable == "t", 1, 0),
-    
-    # LIMPIEZA DE MINIMUM_NIGHTS
-    minimum_nights = ifelse(is.na(minimum_nights), 1, minimum_nights)
-  ) %>%
-  
+  group_by(room_type)%>%
+    mutate(
+      reviews_per_month = replace_na(reviews_per_month, 0),
+      bedrooms = ifelse(is.na(bedrooms), median(bedrooms, na.rm = TRUE), bedrooms),
+      review_scores_rating = ifelse(is.na(review_scores_rating), mean(review_scores_rating, na.rm = TRUE), review_scores_rating),
+      review_scores_cleanliness = ifelse(is.na(review_scores_cleanliness), mean(review_scores_cleanliness, na.rm = TRUE), review_scores_cleanliness),
+      review_scores_location = ifelse(is.na(review_scores_location), mean(review_scores_location, na.rm = TRUE), review_scores_location),
+      instant_bookable_binary = ifelse(instant_bookable == "t", 1, 0),
+      
+      # LIMPIEZA DE MINIMUM_NIGHTS
+      minimum_nights = ifelse(is.na(minimum_nights), 1, minimum_nights)
+    ) %>%
+  ungroup() %>%
   # --- 5. SELECCIÓN FINAL ---
   select(
     id, 
@@ -328,7 +330,7 @@ Para garantizar la robustez de los modelos posteriores (Clustering y Regresión)
 
 -   **Actividad (`reviews_per_month`):** Los nulos se imputan con **0**, interpretando la ausencia de dato como actividad nula.
 
--   **Estructural (`bedrooms`):** Se imputa con la **mediana**, al ser una medida más robusta frente a valores atípicos en variables de conteo entero.
+-   **Estructural (`bedrooms`):** Se imputa con la **mediana condicionada** por la tipologia del alojamiento `room_type`, en lugar de emplear la mediana global. Esto nos permite preservar la heterogeneidad y la varianza intrinseca de cada modelo de alojamiento, evitando sesgos.
 
 -   **Calidad (`review_scores`):** Se imputa con la **media** global para mantener la neutralidad de la observación sin penalizarla artificialmente.
 
@@ -567,7 +569,7 @@ Para traducir esta dispersión visual a un modelo matemático, aplicamos Ingenie
 
 ```{r}
 # Instalamos y cargamos el paquete necesario para distancias geoespaciales
-# install.packages("geosphere")
+#install.packages("geosphere")
 library(geosphere)
 library(dplyr)
 
