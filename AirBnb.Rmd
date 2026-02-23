@@ -7,9 +7,41 @@ output: html_notebook
 
 ## 1.1. Contexto del Problema
 
+El presente trabajo se centra en el análisis de datos del mercado de alquileres vacacionales en la ciudad de Sevilla, operado a través de la plataforma **Airbnb**.
+
+**¿Por qué es interesante y cuál es su impacto actual?** El dominio de los alquileres turísticos es actualmente uno de los temas socioeconómicos más candentes a nivel local y nacional. Sevilla es uno de los principales focos turísticos de España, recibiendo a millones de visitantes anualmente. La irrupción de plataformas como Airbnb ha generado un volumen de negocio multimillonario, transformando por completo el mercado inmobiliario de la ciudad. Sin embargo, este fenómeno también ha traído consigo el debate sobre la turistificación, la gentrificación de barrios históricos y la subida del precio del alquiler residencial.
+
+Entender este dominio mediante la Ciencia de Datos no solo es interesante desde una perspectiva de **inteligencia de negocio** (para inversores que buscan rentabilidad), sino también desde la **gestión pública** (para reguladores urbanísticos que necesitan comprender la saturación del Casco Antiguo).
+
 ## 1.2. Objetivos del Estudio
 
+El objetivo principal de este proyecto es aplicar técnicas de *Machine Learning* y Análisis Exploratorio Avanzado para extraer *insights* de valor sobre la dinámica de precios y la profesionalización del sector. Para ello, planteamos tres preguntas de negocio fundamentales que cualquier inversor o analista se haría al estudiar este mercado. El dataset seleccionado es perfectamente representativo para responderlas, ya que contiene tanto la oferta de precios reales como la demanda latente (medida a través de las *reviews*).
+
+Las preguntas a resolver son:
+
+1.  **Segmentación del mercado: ¿Podemos identificar clústeres de alojamientos que se comporten de forma distinta al estándar del barrio?**
+
+    -   *Utilidad real:* Permite a inversores identificar nichos de mercado (ej. "Tiburones inmobiliarios" de alta rotación frente a "Habitaciones compartidas de bajo coste") y entender qué modelo de negocio domina cada zona de Sevilla, más allá de la media administrativa.
+
+2.  **Determinantes del Precio: ¿Qué variables determinan el precio de mercado en Sevilla y qué pisos están sobrevalorados?**
+
+    -   *Utilidad real:* Mediante modelos predictivos (Regresión), un inversor inmobiliario puede tasar objetivamente una vivienda basándose en sus características físicas (baños, capacidad) y detectar oportunidades de inversión (pisos infravalorados) frente a trampas de mercado (pisos con precio inflado sin justificación).
+
+3.  **El "Efecto Giralda": ¿Cómo cae el precio del alquiler turístico por cada 100 metros que nos alejamos de la Catedral?**
+
+    -   *Utilidad real:* Convierte la geografía en matemáticas. Al cuantificar el decaimiento exacto del precio por metro de alejamiento, una agencia inmobiliaria puede calcular si el sobrecoste de comprar un piso en pleno centro se amortiza con la prima de facturación turística diaria.
+
 ## 1.3. Descripción del Dataset
+
+Para abordar estas cuestiones, hemos utilizado un conjunto de datos público extraído del portal **Inside Airbnb**(<https://insideairbnb.com/get-the-data/>), un proyecto independiente que proporciona datos scrapeados directamente de la plataforma oficial para el análisis de su impacto en ciudades de todo el mundo.
+
+-   **Origen de los datos:** Archivo `listings.csv` correspondiente a la ciudad de Sevilla.
+
+-   **Volumen de observaciones (Filas):** El dataset original cuenta con **8.215 observaciones** (cada fila representa un alojamiento único ofertado en la ciudad).
+
+-   **Volumen de características (Columnas):** Contiene **79 variables** originales que detallan desde las coordenadas geográficas hasta las políticas de reserva y calificaciones de los huéspedes.
+
+-   **Tamaño del archivo:** El dataset en crudo ocupa aproximadamente **18.5 MB** de memoria física, lo que justifica la necesidad de aplicar técnicas de preprocesamiento, limpieza y reducción de dimensionalidad para optimizar el rendimiento computacional de nuestros algoritmos.
 
 # 2. Selección de variables y preprocesamiento de datos
 
