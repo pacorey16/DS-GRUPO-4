@@ -1,0 +1,107 @@
+---
+title: "4_2 Determinantes del Precio"
+output: html_document
+date: "2026-02-23"
+---
+
+## 4.2. Determinantes del Precio
+
+```{r}
+library(tidyverse) 
+library(corrplot)
+```
+
+```{r}
+listings_4_2 <- read.csv("./csv/listings_preprocesado.csv")
+```
+
+
+```{r}
+# --- SECCIÓN 4.2: DECONSTRUCCIÓN DEL PRECIO ---
+
+# 1. ENTRENAMIENTO DEL MODELO DE REGRESIÓN LINEAL
+# Usamos las variables que definen valor: Ubicación, Tamaño y Calidad
+modelo_precio <- lm(price ~ neighbourhood_cleansed + 
+                      room_type + 
+                      accommodates + 
+                      bathrooms + 
+                      has_pool + 
+                      has_ac + 
+                      review_scores_rating, 
+                    data = listings_4_2)
+
+# 2. VER LOS RESULTADOS (La "Deconstrucción")
+summary(modelo_precio)
+```
+
+
+```{r}
+# 3. CALCULAR EL "PRECIO JUSTO" MATEMÁTICO
+listings_4_2$precio_justo <- predict(modelo_precio, listings_4_2)
+
+# 4. CALCULAR EL SOBREPRECIO (Residuo)
+# Diferencia entre lo que piden (Real) y lo que vale (Justo)
+listings_4_2$sobreprecio <- listings_4_2$price - listings_4_2$precio_justo
+
+# 5. DETECTAR EL TOP 10 "TRAMPAS TURÍSTICAS" (Más inflados)
+top_inflados <- listings_4_2 %>%
+  arrange(desc(sobreprecio)) %>%
+  select(id, neighbourhood_cleansed, price, precio_justo, sobreprecio) %>%
+  head(10)
+
+print("--- Top 10 Pisos más sobrevalorados matemáticamente ---")
+print(top_inflados)
+
+# 6. DETECTAR EL TOP 10 "CHOLLOS" (Más infravalorados)
+top_chollos <- listings_4_2 %>%
+  arrange(sobreprecio) %>% # Orden ascendente (los más negativos)
+  select(id, neighbourhood_cleansed, price, precio_justo, sobreprecio) %>%
+  head(10)
+
+print("--- Top 10 Oportunidades de Mercado ---")
+print(top_chollos)
+```
+
+```{r}
+library(broom) # Para sacar los coeficientes bonitos
+
+# Extraemos los coeficientes del modelo
+coeficientes <- tidy(modelo_precio) %>%
+  filter(term != "(Intercept)") %>% # Quitamos el precio base
+  filter(!str_detect(term, "neighbourhood")) %>% # Quitamos los barrios para ver solo características
+  arrange(desc(estimate))
+
+# Gráfico de Barras de Valor
+ggplot(coeficientes, aes(x = reorder(term, estimate), y = estimate, fill = estimate > 0)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "¿Cuánto valen las características de un piso?",
+       subtitle = "Incremento de precio en € por cada atributo",
+       x = "Característica", y = "Valor en Euros (€)", fill = "Aporta Valor")
+```
+
+
+```{r}
+ggplot(listings_4_2, aes(x = precio_justo, y = price)) +
+  geom_point(alpha = 0.4, color = "gray") +
+  
+  # Línea de "Precio Justo" (Diagonal Perfecta)
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed", size = 1) +
+  
+  # Resaltar zonas
+  annotate("text", x = 100, y = 400, label = "Sobrevalorados\n(Inflados)", color = "red") +
+  annotate("text", x = 400, y = 100, label = "Infravalorados\n(Chollos)", color = "green") +
+  
+  theme_minimal() +
+  labs(title = "Precio Real vs. Precio Justo (Modelo Matemático)",
+       x = "Precio Estimado por el Modelo (€)",
+       y = "Precio Real de Mercado (€)") +
+  xlim(0, 500) + ylim(0, 500) # Zoom para ver el grueso del mercado
+
+```
+
+
+```{r}
+```
+
