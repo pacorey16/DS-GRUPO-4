@@ -78,8 +78,6 @@ Despues hemos aplicado el test de Breusch-Pagan para confirmar si la varianza de
 ### 4.2.3 Interpretación del modelo
 
 ```{r}
-# --- 4. INTERPRETACIÓN: EL VALOR DE LAS CARACTERÍSTICAS ---
-
 coeficientes <- tidy(modelo_precio) %>%
   filter(term != "(Intercept)") %>%
   filter(!str_detect(term, "neighbourhood")) %>% 
@@ -106,8 +104,6 @@ Podemos observar en la imagen que el modelo arroja un coeficiente negativo para 
 ### 4.2.4 Detección de anomalías
 
 ```{r}
-# --- 5. DETECCIÓN DE ANOMALÍAS DE MERCADO ---
-
 # Calculamos predicciones y residuos
 listings_4_2$precio_justo <- predict(modelo_precio, listings_4_2)
 listings_4_2$sobreprecio <- listings_4_2$price - listings_4_2$precio_justo
@@ -149,9 +145,6 @@ Por debajo de la línea nos encontramos propiedades en La Florida y San Bartolom
 ### 4.2.6 Modelo avanzado con iteracciones
 
 ```{r}
-# --- 6. MODELO AVANZADO CON INTERACCIONES ---
-# Hipótesis: ¿Vale lo mismo una piscina en una habitación privada que en un piso entero?
-
 modelo_interaccion <- lm(price ~ neighbourhood_cleansed + 
                            accommodates + 
                            review_scores_rating +
@@ -174,8 +167,6 @@ Como conclusión final podemos afirmar que la regla de los 60€ más por piscin
 
 
 ```{r}
-# --- 8. VISUALIZACIÓN DE INTERACCIONES (Efecto Moderador) ---
-
 # Calculamos el precio medio según si tiene piscina y el tipo de habitación
 interaccion_plot <- listings_4_2 %>%
   group_by(room_type, has_pool) %>%
@@ -209,8 +200,6 @@ A continuación, se presenta un caso de uso:
   - Calidad Esperada: Calificación de 4.8/5
 
 ```{r}
-# --- 9. HERRAMIENTA DE NEGOCIO: CALCULADORA DE PRECIO JUSTO ---
-
 predecir_precio <- function(barrio, tipo, capacidad, baños, piscina, ac, rating) {
   
   # Creamos un dataframe con los datos de entrada
@@ -230,8 +219,8 @@ predecir_precio <- function(barrio, tipo, capacidad, baños, piscina, ac, rating
   return(paste0("El precio justo de mercado para este piso es: ", round(prediccion, 2), "€"))
 }
 
-# EJEMPLO DE USO:
-# "¿Cuánto debería cobrar por un piso en Triana para 4 personas con piscina?"
+# EJEMPLO:
+# "¿Cuánto debería costar  un piso en Triana para 4 personas con piscina?"
 print(predecir_precio("Triana Oeste", "Entire home/apt", 4, 1, 1, 1, 4.8))
 ```
 
