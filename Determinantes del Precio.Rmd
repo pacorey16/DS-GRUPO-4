@@ -23,10 +23,9 @@ Para dar respuesta a esta pregunta hemos decidido utilizar un modelo de **Regres
 
 PrecioReal = PrecioBase + (ValorBarrio) + (ValorCapacidad) + (ValorExtras) + Error
 
-
+MODELO LINEAL GENERALIZADO
 
 ```{r}
-# --- 2. ENTRENAMIENTO DEL MODELO DE REGRESIÓN (DECONSTRUCCIÓN) ---
 # Modelo explicativo base
 modelo_precio <- lm(price ~ neighbourhood_cleansed + 
                       room_type + 
@@ -49,8 +48,6 @@ Con un R-squared ajustado sobre el 37% el modelo explica más de un tercio de la
 ### 4.2.2 Diagnóstico y validación 
 
 ```{r}
-# --- 3. DIAGNÓSTICO Y VALIDACIÓN DEL MODELO ---
-
 # A. Multicolinealidad (VIF)
 # Verificamos que las variables no sean redundantes entre sí
 vif_valores <- vif(modelo_precio)
