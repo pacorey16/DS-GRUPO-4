@@ -894,51 +894,83 @@ ggplot(interaccion_plot, aes(x = room_type, y = precio_medio, group = has_pool, 
 
 Para abordar la hipótesis del 'Efecto Giralda', comenzamos analizando la distribución espacial de los precios como un continuo geográfico. Al prescindir de las fronteras administrativas de los barrios (que a menudo son arbitrarias y no reflejan la realidad del mercado turístico), buscamos observar si existe un patrón radial de encarecimiento que tenga como epicentro absoluto el principal monumento de la ciudad: la Catedral/Giralda.
 
-```{r}
-ggplot(df_eda, aes(x = longitude, y = latitude, color = price)) +
-  geom_point(size = 0.8, alpha = 0.6) +
-  
-  # AÑADIR LA GIRALDA - Punto de referencia
-  annotate("point", x = -5.99238, y = 37.38614, color = "yellow", size = 3, shape = 17) + 
-  annotate("text", x = -5.99238, y = 37.38614, label = "Giralda", vjust = -1.5, color = "yellow", fontface = "bold", size=3) +
-  
-  scale_color_viridis_c(option = "magma", direction = -1, limits = c(0, 300), oob = scales::squish) + 
-  
-  coord_quickmap() +
-  theme_void() +
-  labs(title = "Mapa de Precios Sevilla Centro", color = "Precio (€)")
-```
+Dado que el dataset original solo contenía coordenadas geográficas (latitud/longitud), era imprescindible transformarlas en una métrica de negocio utilizable.
 
-Como podemos observar en la visualización, los puntos más oscuros (precios más altos) se agrupan formando una densa nube alrededor del marcador amarillo de la Giralda. A medida que nuestra vista se desplaza hacia la periferia, los colores viran hacia tonos más claros, sugiriendo una caída del precio. Sin embargo, esta intuición visual no es suficiente para extraer conclusiones de negocio; necesitamos cuantificar matemáticamente esta pérdida de valor.
-
-Para traducir esta dispersión visual a un modelo matemático, aplicamos Ingeniería de Características empleando la fórmula de Haversine. Esta técnica nos permite calcular la distancia de círculo máximo (en metros) entre las coordenadas de cada alojamiento y las coordenadas exactas de la Giralda, teniendo en cuenta la curvatura de la Tierra.
+Para ello, hemos aplicado la fórmula de Haversine, calculando la distancia de círculo máximo (en metros) entre cada alojamiento y la Catedral, teniendo en cuenta la curvatura de la Tierra. Gracias a esta nueva variable (distancia_giralda_m), hemos podido acotar el análisis a un radio operativo de 3.000 metros y generar la siguiente visualización de "Calor Radial":
 
 ```{r}
-# Instalamos y cargamos el paquete necesario para distancias geoespaciales
-#install.packages("geosphere")
-library(geosphere)
+# --- Visualización "Diana" del Efecto Giralda ---
+
 library(dplyr)
+library(ggplot2)
+library(geosphere) # Necesario para calcular la distancia
 
-# 1. Definimos las coordenadas exactas de la Giralda (Longitud, Latitud)
-giralda_coords <- c(-5.99238, 37.38614)
+# 1. Definimos el centro (Giralda)
+centro_giralda <- c(-5.99238, 37.38614)
 
-# 2. Calculamos la distancia en metros para cada alojamiento
-df_dist_giralda <- df_eda %>%
-  rowwise() %>% # Calculamos fila por fila
+# 2. CALCULAMOS LA DISTANCIA (El paso que faltaba antes)
+
+df_eda <- df_eda %>%
+  rowwise() %>%
   mutate(
-    distancia_giralda_m = distHaversine(c(longitude, latitude), giralda_coords)
+    distancia_giralda_m = distHaversine(c(longitude, latitude), centro_giralda)
   ) %>%
   ungroup()
 
-# 3. Comprobación rápida de la nueva variable
-summary(df_dist_giralda$distancia_giralda_m)
+# 3. Ahora sí, creamos df_diana filtrando por esa distancia
+df_diana <- df_eda %>%
+  filter(distancia_giralda_m <= 3000)
+
+# 4. Generamos los anillos de la diana (1km, 2km, 3km)
+crear_anillo <- function(radio_metros, etiqueta) {
+  angulos <- seq(0, 2*pi, length.out = 100)
+  r_lat <- radio_metros / 111132.95
+  r_lon <- radio_metros / (111132.95 * cos(centro_giralda[2] * pi/180))
+  data.frame(
+    x = centro_giralda[1] + r_lon * cos(angulos),
+    y = centro_giralda[2] + r_lat * sin(angulos),
+    label = etiqueta
+  )
+}
+
+anillos <- bind_rows(
+  crear_anillo(500, "500 m"),
+  crear_anillo(1000, "1 km"),
+  crear_anillo(1500, "1.5 km"),
+  crear_anillo(2000, "2 km"),
+  crear_anillo(2500, "2.5 km"),
+  crear_anillo(3000, "3 km")
+)
+
+# 5. Pintamos el Mapa
+ggplot() +
+  geom_point(data = df_diana, aes(x = longitude, y = latitude, color = price), 
+             size = 1, alpha = 0.8) +
+  geom_path(data = anillos, aes(x = x, y = y), color = "white", linetype = "dashed", size = 0.8) +
+  geom_text(data = anillos %>% group_by(label) %>% slice(1), 
+            aes(x = x, y = y, label = label), color = "white", vjust = -0.5, fontface = "bold") +
+  annotate("point", x = centro_giralda[1], y = centro_giralda[2], color = "yellow", size = 4, shape = 18) +
+  annotate("text", x = centro_giralda[1], y = centro_giralda[2], label = "Giralda", 
+           vjust = 2, color = "yellow", fontface = "bold", size = 4) +
+  scale_color_viridis_c(option = "magma", direction = -1, limits = c(0, 300), oob = scales::squish) +
+  coord_quickmap() + 
+  theme_void() + 
+  theme(plot.background = element_rect(fill = "gray10", color = NA), 
+        legend.text = element_text(color = "white"),
+        legend.title = element_text(color = "white"),
+        plot.title = element_text(color = "white", hjust = 0.5)) +
+  labs(title = "Mapa de Calor Radial: El 'Efecto Giralda'", 
+       subtitle = "Decaimiento del precio en anillos de 1km, 2km y 3km",
+       color = "Precio (€)")
 ```
+
+Como podemos observar en la visualización, los puntos más oscuros (precios más altos) se agrupan formando una densa nube alrededor del marcador amarillo de la Giralda. A medida que nuestra vista se desplaza hacia la periferia, los colores viran hacia tonos más claros, sugiriendo una caída del precio. Sin embargo, esta intuición visual no es suficiente para extraer conclusiones de negocio; necesitamos cuantificar matemáticamente esta pérdida de valor.
 
 Una vez calculada la distancia exacta a la Giralda, procedemos a modelar el decaimiento del valor económico. Para evitar el sesgo introducido por los diferentes tipos de alojamiento, aislaremos el análisis exclusivamente a la categoría 'Entire home/apt' y limitaremos el radio de estudio a los primeros 3.000 metros (área de influencia turística). Dado que la caída de precios en bienes raíces rara vez es perfectamente lineal (el precio tiende a estabilizarse en la periferia), utilizaremos una técnica de Regresión No Lineal (LOESS) para capturar la curvatura real del mercado, complementada con un modelo lineal clásico para los primeros 1.000 metros y así responder con precisión a nuestra pregunta de negocio.
 
 ```{r}
 # 1. Filtramos datos para comparar "manzanas con manzanas"
-df_giralda <- df_dist_giralda %>% 
+df_giralda <- df_eda %>% 
   filter(
     room_type == "Entire home/apt", # Solo pisos completos
     price < 400,                    # Filtramos lujo extremo para ver la tendencia general
