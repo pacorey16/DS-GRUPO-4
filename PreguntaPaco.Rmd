@@ -1,0 +1,187 @@
+---
+title: "PreguntaPaco"
+output: html_document
+---
+
+```{r}
+# --- PREGUNTA INDIVIDUAL 1: CONCENTRACIÓN DE MERCADO ---
+
+library(tidyverse)
+
+# 1. Cargar el dataset ORIGINAL (cambia la ruta a donde lo tengas)
+listings_original <- read.csv("./csv/listings.csv") # Pon tu ruta real aquí
+
+# 2. Agrupar por Host y contar cuántos pisos tiene cada uno
+resumen_inversores <- listings_original %>%
+  group_by(host_id) %>%
+  summarise(num_pisos = n(), .groups = 'drop') %>%
+  mutate(perfil_inversor = case_when(
+    num_pisos == 1 ~ "1. Particular (1 anuncio)",
+    num_pisos >= 2 & num_pisos <= 4 ~ "2. Pequeño Inversor (2-4 anuncios)",
+    num_pisos >= 5 ~ "3. Gran Tenedor (5+ anuncios)"
+  ))
+
+# 3. Calcular la cuota de mercado
+analisis_mercado <- resumen_inversores %>%
+  group_by(perfil_inversor) %>%
+  summarise(
+    total_anfitriones = n(),
+    total_pisos_controlados = sum(num_pisos),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    pct_anfitriones = round((total_anfitriones / sum(total_anfitriones)) * 100, 1),
+    pct_mercado = round((total_pisos_controlados / sum(total_pisos_controlados)) * 100, 1)
+  )
+
+# Mostramos los resultados en consola para que me los pases
+print("--- TABLA DE CONCENTRACIÓN DE MERCADO ---")
+print(analisis_mercado)
+
+# 4. Gráfico de la divergencia (El gráfico de Matrícula)
+# Preparamos los datos para que ggplot los entienda bien
+df_plot <- analisis_mercado %>%
+  select(perfil_inversor, pct_anfitriones, pct_mercado) %>%
+  pivot_longer(cols = c(pct_anfitriones, pct_mercado), 
+               names_to = "metrica", 
+               values_to = "porcentaje") %>%
+  mutate(metrica = ifelse(metrica == "pct_anfitriones", 
+                          "% de Personas (Anfitriones)", 
+                          "% del Mercado (Pisos controlados)"))
+
+ggplot(df_plot, aes(x = perfil_inversor, y = porcentaje, fill = metrica)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_text(aes(label = paste0(porcentaje, "%")), 
+            position = position_dodge(width = 0.7), vjust = -0.5, size = 4) +
+  theme_minimal() +
+  scale_fill_manual(values = c("steelblue", "tomato")) +
+  labs(title = "Radiografía del Mercado: ¿Quién controla Airbnb en Sevilla?",
+       subtitle = "Comparativa entre el volumen de propietarios y la cuota de mercado real",
+       x = "Perfil del Inversor", y = "Porcentaje (%)", fill = "") +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 15, hjust = 1))
+```
+```{r}
+# --- PREGUNTA INDIVIDUAL 2: ESTACIONALIDAD Y SIGNIFICANCIA ---
+
+library(tidyverse)
+library(lubridate)
+
+# 1. Cargar el dataset del calendario
+# Ojo: tarda un poquito en cargar porque es un archivo muy pesado
+calendario <- read.csv("./csv/calendar.csv")
+
+# 2. Limpieza de datos
+# El precio viene con el símbolo $ y comas (ej: "$1,200.00"). Hay que pasarlo a número puro.
+calendario_limpio <- calendario %>%
+  # Convertimos la fecha a formato Date
+  mutate(date = as.Date(date)) %>%
+  # Limpiamos la columna price (quitamos el $, las comas y lo hacemos numérico)
+  mutate(price = as.numeric(gsub("[\\$,]", "", price))) %>%
+  # Filtramos posibles valores nulos o precios a 0
+  filter(!is.na(price) & price > 0)
+
+# 3. Calcular el precio medio diario del mercado
+precios_diarios <- calendario_limpio %>%
+  group_by(date) %>%
+  summarise(precio_medio = mean(price, na.rm = TRUE)) %>%
+  # --- IMPORTANTE: CAMBIA ESTAS FECHAS POR LAS DEL AÑO DE TU DATASET ---
+  mutate(temporada = case_when(
+    date >= as.Date("2025-03-24") & date <= as.Date("2025-03-31") ~ "1. Semana Santa",
+    date >= as.Date("2025-04-14") & date <= as.Date("2025-04-20") ~ "2. Feria de Abril",
+    TRUE ~ "3. Resto del Año"
+  )) %>%
+  # Convertimos a factor para el análisis
+  mutate(temporada = as.factor(temporada))
+
+# 4. Gráfico de Cajas (Boxplot) para ver la diferencia visual
+ggplot(precios_diarios, aes(x = temporada, y = precio_medio, fill = temporada)) +
+  geom_boxplot(alpha = 0.8) +
+  theme_minimal() +
+  scale_fill_manual(values = c("purple", "tomato", "steelblue")) +
+  labs(title = "Distribución del Precio Medio Diario en Sevilla",
+       subtitle = "¿Se disparan los precios en los eventos clave?",
+       x = "Temporada", y = "Precio Medio del Mercado (€)") +
+  theme(legend.position = "none")
+
+# 5. TEST ESTADÍSTICO (ANOVA)
+# Comparamos si las medias de los 3 grupos son estadísticamente diferentes
+test_anova <- aov(precio_medio ~ temporada, data = precios_diarios)
+print("--- RESULTADOS DEL TEST ANOVA ---")
+summary(test_anova)
+
+# 6. TEST DE TUKEY (Para saber exactamente cuántos euros de diferencia hay)
+print("--- DIFERENCIAS EXACTAS (Test de Tukey) ---")
+TukeyHSD(test_anova)
+```
+
+```{r}
+na_summary <- data.frame(
+  columna = names(calendar),
+  na_pct = colSums(is.na(calendar)) / nrow(calendar) * 100
+) %>%
+  filter(na_pct > 0) %>% # Solo mostramos las que tienen nulos
+  arrange(desc(na_pct)) # Ordenamos de mayor a menor
+
+# Pintamos solo las columnas problemáticas
+ggplot(na_summary, aes(x = reorder(columna, na_pct), y = na_pct)) +
+  geom_bar(stat = "identity", fill = "orange", width = 0.7) +
+  coord_flip() + # Giramos para leer los nombres
+  theme_minimal() +
+  labs(
+    title = "Porcentaje de Valores Nulos por Variable",
+    
+    x = "Variable",
+    y = "% de Nulos"
+  ) +
+  geom_text(aes(label = round(na_pct, 1)), hjust = -0.2, size = 3)
+```
+```{r}
+# --- PREGUNTA INDIVIDUAL 2: ESTACIONALIDAD Y OCUPACIÓN (PIVOT) ---
+
+library(tidyverse)
+library(lubridate)
+
+# 1. Transformar datos: 'f' (False, no disponible) se convierte en 1 (Ocupado/Bloqueado)
+calendario_ocupacion <- calendario %>%
+  mutate(date = as.Date(date),
+         ocupado = ifelse(available == "f", 1, 0))
+
+# 2. Calcular la Tasa de Ocupación Diaria (% de pisos reservados ese día)
+ocupacion_diaria <- calendario_ocupacion %>%
+  group_by(date) %>%
+  summarise(tasa_ocupacion = mean(ocupado, na.rm = TRUE) * 100) %>%
+  # --- FECHAS ACTUALIZADAS A 2026 ---
+  mutate(temporada = case_when(
+    date >= as.Date("2026-03-29") & date <= as.Date("2026-04-05") ~ "1. Semana Santa",
+    date >= as.Date("2026-04-20") & date <= as.Date("2026-04-26") ~ "2. Feria de Abril",
+    TRUE ~ "3. Resto del Año"
+  )) %>%
+  mutate(temporada = as.factor(temporada))
+
+# 3. Gráfico Visual (Boxplot)
+ggplot(ocupacion_diaria, aes(x = temporada, y = tasa_ocupacion, fill = temporada)) +
+  geom_boxplot(alpha = 0.8) +
+  theme_minimal() +
+  scale_fill_manual(values = c("purple", "tomato", "steelblue")) +
+  labs(title = "Presión Turística: Tasa de Ocupación en Sevilla (2025-2026)",
+       subtitle = "¿Se bloquean los pisos en los eventos clave de la ciudad?",
+       x = "Temporada", y = "Tasa de Ocupación Media (%)") +
+  theme(legend.position = "none")
+
+# 4. TEST ESTADÍSTICO (ANOVA)
+test_anova_ocupacion <- aov(tasa_ocupacion ~ temporada, data = ocupacion_diaria)
+print("--- RESULTADOS DEL TEST ANOVA (OCUPACIÓN) ---")
+summary(test_anova_ocupacion)
+
+# 5. TEST DE TUKEY (Diferencias exactas)
+print("--- DIFERENCIAS EXACTAS EN % (Test de Tukey) ---")
+TukeyHSD(test_anova_ocupacion)
+```
+
+```{r}
+fechas_reales <- as.Date(calendario$date)
+print(paste("La primera fecha es:", min(fechas_reales, na.rm = TRUE)))
+print(paste("La última fecha es:", max(fechas_reales, na.rm = TRUE)))
+```
+
