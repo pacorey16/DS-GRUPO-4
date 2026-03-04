@@ -687,7 +687,7 @@ ggplot(df_cluster, aes(x = neighbourhood_group_cleansed, fill = Cluster_11)) +
 
 Para validar la segmentación de 5 modelos de negocio, se planteó una prueba de refutación:
 
-*Si forzamos al algoritmo a buscar 11 clústeres, \
+*Si forzamos al algoritmo a buscar 11 clústeres,\
 ¿será capaz de mapear exactamente los 11 distritos de Sevilla?*
 
 Los resultados del gráfico k=11 rechaza esta hipótesis claramente:
