@@ -1,0 +1,237 @@
+---
+title: "María Luisa Trabajo Individual"
+output: html_document
+---
+
+### Pregunta individual 1: *¿Se puede estimar la puntuación de un alojamiento basándose solo en su precio y ubicación?*
+
+```{r}
+library(arules)
+library(dplyr)
+
+df_rating <- df_eda %>%
+  select(price, review_scores_rating, neighbourhood_group_cleansed) %>%
+  drop_na(review_scores_rating) %>%
+  
+  # DISCRETIZACIÓN: Convertimos números en Factores
+  mutate(
+    # Categorizamos el Rating
+    Categoria_Rating = case_when(
+      review_scores_rating >= 4.8 ~ "Sobresaliente",
+      review_scores_rating >= 4.5 ~ "Aceptable",
+      TRUE ~ "Regular_Malo"
+    ),
+    
+    # Categorizamos el Precio
+    Categoria_Precio = case_when(
+      price <= 60 ~ "Barato",
+      price <= 120 ~ "Medio",
+      TRUE ~ "Caro"
+    ),
+    
+    # Categorizamos la Ubicación - agrupamos los distritos turísticos vs. el resto
+    Zona = case_when(
+      neighbourhood_group_cleansed %in% c("Casco Antiguo", "Triana", "Nervión", "Los Remedios") ~ "Centro/Turistica",
+      TRUE ~ "Periferia/Residencial"
+    )
+  ) %>%
+  
+  # Nos quedamos SOLO con las columnas categorizadas y las convertimos a factor
+  select(Categoria_Rating, Categoria_Precio, Zona) %>%
+  mutate(across(everything(), as.factor))
+
+summary(df_rating)
+```
+
+```{r}
+# --- 1. ENTRENAMIENTO DEL ALGORITMO APRIORI ---
+# parameter: supp (soporte mínimo 5% de los datos), conf (confianza/probabilidad mínima 60%)
+reglas <- apriori(df_rating, 
+                  parameter = list(supp = 0.05, conf = 0.6, target = "rules"))
+
+# --- 2. FILTRADO DE REGLAS DE NEGOCIO ---
+# Como solo nos interesa predecir el Rating, le decimos que filtre las reglas 
+# donde la consecuencia (Right Hand Side - rhs) sea la categoría del Rating.
+reglas_rating <- subset(reglas, subset = rhs %pin% "Categoria_Rating")
+
+# --- 3. RESULTADOS ---
+# Ordenamos las reglas por su confianza (probabilidad de acierto) de mayor a menor
+reglas_ordenadas <- sort(reglas_rating, by = "confidence", decreasing = TRUE)
+
+# Imprimimos en consola las 10 reglas más fuertes
+inspect(head(reglas_ordenadas, 10))
+```
+
+```{r}
+# --- 1. ENTRENAMIENTO APRIORI (Con criterios más flexibles) ---
+# Bajamos a supp = 0.02 (2%) y conf = 0.4 (40%)
+reglas <- apriori(df_rating, 
+                  parameter = list(supp = 0.02, conf = 0.4, target = "rules"))
+
+# --- 2. FILTRADO ---
+reglas_rating <- subset(reglas, subset = rhs %pin% "Categoria_Rating")
+
+# --- 3. ¿CUÁNTAS REGLAS HA ENCONTRADO AHORA? ---
+# Esto imprimirá en consola el número exacto de reglas descubiertas
+print(paste("Número total de reglas encontradas para Rating:", length(reglas_rating)))
+
+# --- 4. RESULTADOS ---
+reglas_ordenadas <- sort(reglas_rating, by = "confidence", decreasing = TRUE)
+inspect(head(reglas_ordenadas, 10))
+
+```
+
+### Conclusiones del Algoritmo Apriori: Predicción de la Calidad (Rating)
+
+> *¿Se puede estimar la puntuación de un alojamiento basándose solo en su precio y ubicación?* \
+> **La respuesta es NO.** Y el propio algoritmo de Machine Learning lo ha demostrado.
+
+**1. El Descubrimiento del "Soporte Cero"** En nuestra primera iteración, exigimos al algoritmo Apriori que buscara reglas con una fiabilidad mínima del 60%. El resultado fue **0 reglas encontradas**. Este "fracaso" es en realidad, nuestro mayor descubrimiento de negocio: demuestra estadísticamente que la nota final de un Airbnb no depende de la ubicación y precio. Un piso esté en pleno Casco Antiguo y cueste 200€ no garantiza en absoluto que el huésped le vaya a poner un 5. La nota depende de variables intrínsecas "humanas" que escapan a la geografía (limpieza, amabilidad del anfitrión, calidad del colchón, ruidos).
+
+**2. Psicología de las Expectativas (Análisis de las Reglas)** Al relajar el umbral de confianza al 40% para observar las tendencias menos exigentes, el algoritmo extrajo 18 reglas que nos explican cómo funciona la mente del turista a la hora de puntuar, basándose en la relación Expectativa vs. Realidad:
+
+-   **Regla 1 (Centro + Barato = Aceptable):** La regla más fuerte (53.6% de probabilidad) nos dice que si un piso es barato y está en el centro turístico, la nota tenderá a ser "Aceptable" (4.5 - 4.79). *Interpretación:* El huésped sabe que por ese precio en el centro el piso tendrá carencias (pequeño, ruidoso, antiguo), pero "perdona" estos fallos por la buena ubicación. No le pone un sobresaliente, pero tampoco lo suspende.
+
+-   **Regla 3 (Periferia + Precio Medio = Sobresaliente):** Esta regla (49.1% de probabilidad) es la clave oculta del análisis. \
+    *Interpretación:* Cuando un turista se aleja del centro (Periferia) pagando un precio estándar, sus expectativas se ven ampliamente superadas. Por el mismo precio que un zulo en el centro, en la periferia obtienen un piso grande, reformado y sin ruido. Esa grata sorpresa se traduce directamente en la máxima nota (Sobresaliente).
+
+-   **Regla 5 (Centro + Caro = Sobresaliente):** Pagar mucho en el centro da como resultado la máxima nota, pero la probabilidad es solo un 48%. \
+    *Interpretación:* En el mercado del lujo, la exigencia es máxima. Si el cliente paga un precio alto, espera la perfección. Al más mínimo fallo, la nota cae en picado, lo que explica por qué esta regla no tiene una confianza del 80% o 90%.
+
+**3. El sesgo de la "No-Reseña" (El vacío del cliente satisfecho)**
+A las reglas anteriores debemos sumarle un factor humano limitante para el algoritmo. Existe un gran volumen de huéspedes que disfrutan de una estancia estándar y correcta; están satisfechos, pero sin llegar al asombro ni a la decepción profunda. Estadísticamente, este usuario no siente el impulso emocional de invertir su tiempo en dejar una calificación. Esto genera un vacío de datos donde la plataforma se alimenta principalmente de los extremos (los muy encantados y los muy enfadados), haciendo que la estimación predictiva pura basada solo en precio y zona sea matemáticamente inviable.
+
+```{r}
+library(dplyr)
+
+# Analizamos los 938 pisos que catalogamos como "Regulares/Malos" (< 4.5)
+desglose_malos <- df_eda %>%
+  drop_na(review_scores_rating) %>%
+  filter(review_scores_rating < 4.5) %>%
+  mutate(
+    Gravedad = case_when(
+      review_scores_rating <= 3.0 ~ "1. Crítico (Menos de 3 estrellas)",
+      review_scores_rating <= 4.2 ~ "2. Deficiente (Entre 3 y 4.2)",
+      TRUE ~ "3. Regular (Entre 4.2 y 4.49)"
+    )
+  ) %>%
+  count(Gravedad) %>%
+  mutate(Porcentaje = round((n / sum(n)) * 100, 1))
+
+# Imprimimos la tabla
+print(desglose_malos)
+```
+
+Al analizar en detalle los 938 alojamientos de la categoría "Regular/Malo" (\< 4.5), comprobamos que las puntuaciones bajas reales son una rareza. El **55,9%** de estos pisos "castigados" por la politica de calificaciones de Airbnb, se concentran entre 4.2 y 4.49 (un "Notable" en cualquier otro sector). Por el contrario, los casos críticos (de 1 a 3 estrellas) son solo **92 pisos (un ínfimo 1,2% del mercado total)**. Esto demuestra empíricamente que el usuario de Airbnb casi nunca castiga con la nota mínima salvo negligencia absoluta. Al operar en un ecosistema de calificaciones artificialmente infladas, el algoritmo acaba considerando un 4.2 como un alojamiento deficiente.
+
+> **Conclusión Final:** La minería de datos a través de reglas de asociación nos confirma que en el mercado turístico no se compra una nota a base de bajar precios o comprar en el centro. La puntuación es un reflejo de la gestión de expectativas: los mejores ratings se obtienen cuando la experiencia real del alojamiento supera lo que el cliente esperaba recibir por el precio que pagó.
+
+### Pregunta individual 2: *¿Qué influye más a la hora de fijar el precio de un Airbnb, el lugar o el tipo de alojamiento?*
+
+```{r}
+library(dplyr)
+library(rpart)
+library(rpart.plot)
+
+# 1. PREPARACIÓN DE LOS DATOS
+# Filtramos los precios extremos (>300€) para que los  de tipo lujo no distorsionen
+df_anova <- df_eda %>%
+  filter(price <= 300) %>% 
+  mutate(
+    Tipologia = as.factor(room_type),
+    Barrio = as.factor(neighbourhood_group_cleansed)
+  )
+
+# --- 2. EL JUEZ ESTADÍSTICO: TEST ANOVA DE 2 VÍAS ---
+# Le preguntamos a la estadística pura: ¿Qué variable explica mejor la varianza del precio?
+modelo_anova <- aov(price ~ Tipologia + Barrio, data = df_anova)
+
+# Imprimimos el resultado del test en consola
+print("--- RESULTADOS DEL TEST ANOVA ---")
+summary(modelo_anova)
+
+# --- 3. LA PRUEBA VISUAL: ÁRBOL DE DECISIÓN (CART) ---
+# Le pedimos al algoritmo que divida el mercado basándose en lo que más impacte al precio
+arbol_precio <- rpart(price ~ Tipologia + Barrio, 
+                      data = df_anova, 
+                      method = "anova",
+                      control = rpart.control(cp = 0.01)) # Control de profundidad del árbol
+
+# Dibujamos el Árbol con un diseño limpio para la presentación
+rpart.plot(arbol_precio, 
+           type = 3, 
+           extra = 101, 
+           fallen.leaves = TRUE, 
+           main = "Árbol de Decisión: ¿Qué divide más el Precio?",
+           box.palette = "Blues",
+           shadow.col = "gray",
+           cex = 0.8) # Tamaño del texto, ajústalo si lo ves muy grande o pequeño
+```
+
+En este punto y con este arbol podemos responder a la pregunta planteada: la Tipología pesa más que el Barrio a la hora de fijar el precio. Sin embargo, me ha surgido la curiosidad de si es justa esta comparación inicial. Al fin y al cabo, es muy normal que un "Piso completo" sea más caro que una "Habitación" simplemente porque tiene más metros cuadrados y cabe más gente. Por eso, para no quedarnos con la respuesta fácil y superficial, he querido hacer un último experimento.
+
+Un nuevo árbol de decisión, pero esta vez incluyendo 8 variables de golpe (capacidad, número de baños, si el anfitrión es agencia, la nota que tiene, si tiene piscina, etc.). El objetivo es ver si la Tipología sigue siendo la característica indiscutible del precio o si al enfrentarla al resto de características de los pisos, descubrimos que hay otro factor que impacte más todavía.
+
+```{r}
+library(dplyr)
+library(rpart)
+library(rpart.plot)
+
+df_arbol_completo <- df_eda %>%
+  filter(price <= 300) %>% # Filtramos el lujo extremo para analizar el mercado real
+  select(
+    price,
+    Tipologia = room_type,
+    Barrio = neighbourhood_group_cleansed,
+    Capacidad = accommodates,
+    Dormitorios = bedrooms,
+    Banos = bathrooms,
+    Piscina = has_pool,
+    Agencia = calculated_host_listings_count, 
+    Valoracion = review_scores_rating
+  ) %>%
+
+    mutate(
+    Tipologia = as.factor(Tipologia),
+    Barrio = as.factor(Barrio),
+    Piscina = as.factor(Piscina)
+  )
+
+# El punto (.) es para predecir el precio usando TODAS las columnas
+arbol_completo <- rpart(price ~ ., 
+                        data = df_arbol_completo, 
+                        method = "anova",
+                        control = rpart.control(cp = 0.01))
+
+rpart.plot(arbol_completo, 
+           type = 3, 
+           extra = 101, 
+           fallen.leaves = TRUE, 
+           main = "El Factor más influyente en el Precio de Airbnb",
+           box.palette = "Purples",
+           shadow.col = "gray",
+           cex = 0.6) 
+
+# RANKING MATEMÁTICO DE IMPORTANCIA
+# Extraemos cuánto pesa % cada variable a la hora de poner el precio
+importancia <- round(arbol_completo$variable.importance / sum(arbol_completo$variable.importance) * 100, 2)
+print(" >> RANKING DE IMPORTANCIA DE LAS VARIABLES")
+print(importancia)
+```
+
+Tras someter el mercado a un modelo de Machine Learning multivariable (CART) que evalúa simultáneamente todas las características del inmueble, descubrí que la pregunta original planteaba un falso dilema. **Ni el barrio ni la tipología son los factores más determinantes realmente.**
+
+El mercado de Sevilla parece que sigue reglas de rentabilidad [espaciales y de profesionalización]{.underline}, como demuestra el ranking de importancia de nuestro algoritmo:
+
+**1. Capacidad:** Con un **32,3%** de peso en el algoritmo, esta variable es el primer corte estructural del mercado. El árbol de decisión divide inmediatamente la ciudad en dos grandes grupos: inmuebles para menos de 4 personas (rama izquierda, mercado estándar) y para 4 o más personas.
+
+**2. Baños:** El segundo factor más influyente con un **18,4%**, no es la ubicación, sino el número de baños. Si observamos la rama derecha del árbol (pisos grandes), la división de precio más radical no se hace por barrios, sino por si el piso tiene 1 solo baño o si tiene 2 o más (Baños \>= 1.8). Un segundo baño dispara el precio medio, indicando que el turista valora el confort logístico por encima del código postal.
+
+**3. La Profesionalización:** El hallazgo más sorprendente es que el tamaño del anfitrión (Agencia - **13,7%**) supera en importancia a la Tipología (**11,5%**) y al Barrio (**8,9%**) que eran los planteados en la hipotesis. En la rama izquierda del árbol (pisos pequeños), vemos cómo el algoritmo separa a los anfitriones particulares de las agencias (que hemos filtrado por aquellos con 7 o más pisos). Los profesionales tienden sistemáticamente a poner un sobreprecio por su estandarización de servicios, independientemente de dónde esté el piso ubicado.
+
+**4. La Irrelevancia de la Valoración (1.04%)** Validando nuestras conclusiones del apartado anterior, el árbol confirma que la nota del alojamiento y sus extras (como tener piscina, 0.2%) tienen un impacto estadístico prácticamente nulo a la hora de fijar la tarifa base.
+
+> **Conclusión Final:** \
+> El precio en Airbnb no se define por un "dónde" ni por un "qué", sino por un "cuántos". Para un inversor en Sevilla, comprar un piso céntrico de una sola habitación y un baño es un error estratégico. \
+> \
+> El algoritmo demuestra que la fórmula que da la máxima rentabilidad consiste en adquirir inmuebles que permitan alojar a 4+ personas, instalar un segundo baño si no lo tuviera y ya para terminar de afinar, darle la gestión a una agencia profesional que pueda posicionar el inmueble en la franja de precios premium.
