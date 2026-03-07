@@ -98,7 +98,9 @@ Por último, si nos vamos ahora a los grandes inversores, vemos que con apenas e
 
 Tras todo ello, podemos confirmar que el mercado de Airbnb en Sevilla se encuentra en manos de grandes inversores. Aunque la aplicación tiene miles de pequeños propietarios que realmente fue para lo que se creó esta plataforma, la capacidad real de absorber la demanda, fijar los precios y definir la rentabilidad del sector recae en un grupo muy reducido de grandes propietarios que controlan la mayoría absoluta de toda la oferta disponible.
 
-### ¿Es estadísticamente significativo el aumento de precios en Feria y Semana Santa con respecto al resto del año?
+### ¿Es estadísticamente significativa la caída de disponibilidad en Feria y Semana Santa con respecto al resto del año?
+
+Aunque en un principio habia planteado la siguiente cuestion sobre el dataset: **¿Es estadísticamente significativo el aumento de precios en Feria y Semana Santa con respecto al resto del año?** Tras ver el archivo calendar.csv que tenia disponible me di cuenta que faltaban algunos precios e hice una visualizacion para ver cuantos faltaban y me di cuenta que faltaban el 100% de los datos. Por lo que decidi cambiar el planteamiento de la pregunta, aunque seguir trabajando en la misma linea y con el mismo archivo.
 
 ```         
 ```
@@ -125,6 +127,10 @@ ggplot(na_summary, aes(x = reorder(columna, na_pct), y = na_pct)) +
   geom_text(aes(label = round(na_pct, 1)), hjust = -0.2, size = 3)
 ```
 
+Tras ver estos resultados decidi pivotar hacia un analisis prospectivo de la Presion de Damanada y el Bloqueo Estrategico, para ello utilizaremos la variable de disponibilidad.
+
+En primer lugar debemos realizar una pequeña transformacion de datos en la cual transformaremos los datos de la variable de disponibilidad f que corresponden a no disponible los convertimos a 1 y lo que estan en t que corresponden a disponible a un 0. Ademas, vamos a calcular la tasa de ocupacion diaria, para ver el porcentaje de pisos reservados ese dia, agruparemos por fechas para semana santa, feria y otras fechas.
+
 ```{r}
 # 1. Transformar datos: 'f' (False, no disponible) se convierte en 1 (Ocupado/Bloqueado)
 calendario_ocupacion <- calendario %>%
@@ -144,6 +150,8 @@ ocupacion_diaria <- calendario_ocupacion %>%
   mutate(temporada = as.factor(temporada))
 ```
 
+Para responder la pregunta planteada he
+
 ```{r}
 # 3. Gráfico Visual (Boxplot)
 ggplot(ocupacion_diaria, aes(x = temporada, y = tasa_ocupacion, fill = temporada)) +
@@ -156,6 +164,8 @@ ggplot(ocupacion_diaria, aes(x = temporada, y = tasa_ocupacion, fill = temporada
   theme(legend.position = "none")
 ```
 
+Si nos fijamos en el grafico anterior vemos que las cajas moradas y rojas que correponden a la semana santa estan altisimas y muy comprimidas en torno al 60%. Sin embargo, la caja azul que corresponde con el resto del año tiene una mediana mas baja de un 48% y una varianza muy grande.
+
 ```{r}
 # 4. TEST ESTADÍSTICO (ANOVA)
 test_anova_ocupacion <- aov(tasa_ocupacion ~ temporada, data = ocupacion_diaria)
@@ -163,11 +173,17 @@ print("--- RESULTADOS DEL TEST ANOVA (OCUPACIÓN) ---")
 summary(test_anova_ocupacion)
 ```
 
+El test ANOVA arroja un F-value de 3.819 con un **p-value = 0.0228**. Al ser menor de 0.05, rechaszo la hipótesis nula y demuestro con un 95% de confianza que la temporalidad de los eventos como la feria y la semana santa altera de forma estadísticamente significativa la disponibilidad del mercado sevillano.
+
 ```{r}
 # 5. TEST DE TUKEY (Diferencias exactas)
 print("--- DIFERENCIAS EXACTAS EN % (Test de Tukey) ---")
 TukeyHSD(test_anova_ocupacion)
 ```
+
+Al cruzar las temporadas, descubrimos que la Semana Santa genera una reserva anticipada de **+10,6 puntos porcentuales** respecto a la media del resto del año, seguida muy de cerca por la Feria de Abril con **+9,6 puntos porcentuales** . Además, el test confirma que no existe diferencia estadística entre la Feria y la Semana Santa (p = 0.99), comportándose ambos eventos como picos de estrés idénticos para la ciudad de Sevilla.\
+\
+Dado que estamos analizando los datos de forma prospectiva, una tasa de no disponibilidad en torno al 60% para abril de 2026 no responde únicamente a turistas súper previsores. Estadísticamente, esto demuestra la existencia de un **bloqueo estratégico de calendarios** masivo. Los anfitriones (especialmente los profesionales que detectamos anteriormente) cierran sus viviendas en las fechas de estos eventos para evitar que el algoritmo permita reservas tempranas a precios estándar. Semanas antes del evento, estos calendarios se liberarán estratégicamente con un precio mucho mas elevado, confirmando que la especulación estacional en Sevilla no es un mito, sino una táctica generalizada en el sector.
 
 ```{r}
 ```

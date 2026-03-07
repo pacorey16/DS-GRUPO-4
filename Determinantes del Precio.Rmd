@@ -209,8 +209,6 @@ A continuación, se presenta un caso de uso:
 
 ```{r}
 predecir_precio <- function(barrio, tipo, capacidad, baños, piscina, ac, rating) {
-  
-  # Creamos un dataframe con los datos de entrada
   nuevo_piso <- data.frame(
     neighbourhood_cleansed = barrio,
     room_type = tipo,
@@ -220,14 +218,10 @@ predecir_precio <- function(barrio, tipo, capacidad, baños, piscina, ac, rating
     has_ac = ac,        # 1 o 0
     review_scores_rating = rating
   )
-  
-  # NUEVO: Predecimos usando type = "response" para que lo devuelva en EUROS
   prediccion <- predict(modelo_precio, newdata = nuevo_piso, type = "response")
   
   return(paste0("El precio justo de mercado para este piso es: ", round(prediccion, 2), "€"))
 }
-
-# EJEMPLO DE USO:
 # "¿Cuánto debería cobrar por un piso en Triana para 4 personas con piscina?"
 print(predecir_precio("Triana Oeste", "Entire home/apt", 4, 1, 1, 1, 4.8))
 ```
