@@ -1,89 +1,173 @@
 ---
 title: "R Notebook - Airbnb Sevilla"
 output: html_notebook
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 # 1. Introducción y Objetivos
 
 ## 1.1. Contexto del Problema
 
-El presente trabajo se centra en el análisis de datos del mercado de alquileres vacacionales en la ciudad de Sevilla, operado a través de la plataforma **Airbnb**.
+El presente trabajo se centra en el análisis de datos del mercado de
+alquileres vacacionales en la ciudad de Sevilla, operado a través de la
+plataforma **Airbnb**.
 
-**¿Por qué es interesante y cuál es su impacto actual?** El dominio de los alquileres turísticos es actualmente uno de los temas socioeconómicos más candentes a nivel local y nacional. Sevilla es uno de los principales focos turísticos de España, recibiendo a millones de visitantes anualmente. La irrupción de plataformas como Airbnb ha generado un volumen de negocio multimillonario, transformando por completo el mercado inmobiliario de la ciudad. Sin embargo, este fenómeno también ha traído consigo el debate sobre la turistificación, la gentrificación de barrios históricos y la subida del precio del alquiler residencial.
+**¿Por qué es interesante y cuál es su impacto actual?** El dominio de
+los alquileres turísticos es actualmente uno de los temas
+socioeconómicos más candentes a nivel local y nacional. Sevilla es uno
+de los principales focos turísticos de España, recibiendo a millones de
+visitantes anualmente. La irrupción de plataformas como Airbnb ha
+generado un volumen de negocio multimillonario, transformando por
+completo el mercado inmobiliario de la ciudad. Sin embargo, este
+fenómeno también ha traído consigo el debate sobre la turistificación,
+la gentrificación de barrios históricos y la subida del precio del
+alquiler residencial.
 
-Entender este dominio mediante la Ciencia de Datos no solo es interesante desde una perspectiva de **inteligencia de negocio** (para inversores que buscan rentabilidad), sino también desde la **gestión pública** (para reguladores urbanísticos que necesitan comprender la saturación del Casco Antiguo).
+Entender este dominio mediante la Ciencia de Datos no solo es
+interesante desde una perspectiva de **inteligencia de negocio** (para
+inversores que buscan rentabilidad), sino también desde la **gestión
+pública** (para reguladores urbanísticos que necesitan comprender la
+saturación del Casco Antiguo).
 
 ## 1.2. Objetivos del Estudio
 
-El objetivo principal de este proyecto es aplicar técnicas de *Machine Learning* y Análisis Exploratorio Avanzado para extraer *insights* de valor sobre la dinámica de precios y la profesionalización del sector. Para ello, planteamos tres preguntas de negocio fundamentales que cualquier inversor o analista se haría al estudiar este mercado. El dataset seleccionado es perfectamente representativo para responderlas, ya que contiene tanto la oferta de precios reales como la demanda latente (medida a través de las *reviews*).
+El objetivo principal de este proyecto es aplicar técnicas de *Machine
+Learning* y Análisis Exploratorio Avanzado para extraer *insights* de
+valor sobre la dinámica de precios y la profesionalización del sector.
+Para ello, planteamos tres preguntas de negocio fundamentales que
+cualquier inversor o analista se haría al estudiar este mercado. El
+dataset seleccionado es perfectamente representativo para responderlas,
+ya que contiene tanto la oferta de precios reales como la demanda
+latente (medida a través de las *reviews*).
 
 Las preguntas a resolver son:
 
-1.  **Segmentación del mercado: ¿Podemos identificar clústeres de alojamientos que se comporten de forma distinta al estándar del barrio?**
+1.  **Segmentación del mercado: ¿Podemos identificar clústeres de
+    alojamientos que se comporten de forma distinta al estándar del
+    barrio?**
 
-    -   *Utilidad real:* Permite a inversores identificar nichos de mercado (ej. "Tiburones inmobiliarios" de alta rotación frente a "Habitaciones compartidas de bajo coste") y entender qué modelo de negocio domina cada zona de Sevilla, más allá de la media administrativa.
+    -   *Utilidad real:* Permite a inversores identificar nichos de
+        mercado (ej. "Tiburones inmobiliarios" de alta rotación frente a
+        "Habitaciones compartidas de bajo coste") y entender qué modelo
+        de negocio domina cada zona de Sevilla, más allá de la media
+        administrativa.
 
-2.  **Determinantes del Precio: ¿Qué variables determinan el precio de mercado en Sevilla y qué pisos están sobrevalorados?**
+2.  **Determinantes del Precio: ¿Qué variables determinan el precio de
+    mercado en Sevilla y qué pisos están sobrevalorados?**
 
-    -   *Utilidad real:* Mediante modelos predictivos (Regresión), un inversor inmobiliario puede tasar objetivamente una vivienda basándose en sus características físicas (baños, capacidad) y detectar oportunidades de inversión (pisos infravalorados) frente a trampas de mercado (pisos con precio inflado sin justificación).
+    -   *Utilidad real:* Mediante modelos predictivos (Regresión), un
+        inversor inmobiliario puede tasar objetivamente una vivienda
+        basándose en sus características físicas (baños, capacidad) y
+        detectar oportunidades de inversión (pisos infravalorados)
+        frente a trampas de mercado (pisos con precio inflado sin
+        justificación).
 
-3.  **El "Efecto Giralda": ¿Cómo cae el precio del alquiler turístico por cada 100 metros que nos alejamos de la Catedral?**
+3.  **El "Efecto Giralda": ¿Cómo cae el precio del alquiler turístico
+    por cada 100 metros que nos alejamos de la Catedral?**
 
-    -   *Utilidad real:* Convierte la geografía en matemáticas. Al cuantificar el decaimiento exacto del precio por metro de alejamiento, una agencia inmobiliaria puede calcular si el sobrecoste de comprar un piso en pleno centro se amortiza con la prima de facturación turística diaria.
+    -   *Utilidad real:* Convierte la geografía en matemáticas. Al
+        cuantificar el decaimiento exacto del precio por metro de
+        alejamiento, una agencia inmobiliaria puede calcular si el
+        sobrecoste de comprar un piso en pleno centro se amortiza con la
+        prima de facturación turística diaria.
 
 ## 1.3. Descripción del Dataset
 
-Para abordar estas cuestiones, hemos utilizado un conjunto de datos público extraído del portal **Inside Airbnb**(<https://insideairbnb.com/get-the-data/>), un proyecto independiente que proporciona datos scrapeados directamente de la plataforma oficial para el análisis de su impacto en ciudades de todo el mundo.
+Para abordar estas cuestiones, hemos utilizado un conjunto de datos
+público extraído del portal **Inside
+Airbnb**(<https://insideairbnb.com/get-the-data/>), un proyecto
+independiente que proporciona datos scrapeados directamente de la
+plataforma oficial para el análisis de su impacto en ciudades de todo el
+mundo.
 
--   **Origen de los datos:** Archivo `listings.csv` correspondiente a la ciudad de Sevilla.
+-   **Origen de los datos:** Archivo `listings.csv` correspondiente a la
+    ciudad de Sevilla.
 
--   **Volumen de observaciones (Filas):** El dataset original cuenta con **8.215 observaciones** (cada fila representa un alojamiento único ofertado en la ciudad).
+-   **Volumen de observaciones (Filas):** El dataset original cuenta
+    con **8.215 observaciones** (cada fila representa un alojamiento
+    único ofertado en la ciudad).
 
--   **Volumen de características (Columnas):** Contiene **79 variables** originales que detallan desde las coordenadas geográficas hasta las políticas de reserva y calificaciones de los huéspedes.
+-   **Volumen de características (Columnas):** Contiene **79
+    variables** originales que detallan desde las coordenadas
+    geográficas hasta las políticas de reserva y calificaciones de los
+    huéspedes.
 
--   **Tamaño del archivo:** El dataset en crudo ocupa aproximadamente **18.5 MB** de memoria física, lo que justifica la necesidad de aplicar técnicas de preprocesamiento, limpieza y reducción de dimensionalidad para optimizar el rendimiento computacional de nuestros algoritmos.
+-   **Tamaño del archivo:** El dataset en crudo ocupa
+    aproximadamente **18.5 MB** de memoria física, lo que justifica la
+    necesidad de aplicar técnicas de preprocesamiento, limpieza y
+    reducción de dimensionalidad para optimizar el rendimiento
+    computacional de nuestros algoritmos.
 
 # 2. Selección de variables y preprocesamiento de datos
 
-El dataset original de Airbnb (`listings.csv`) cuenta con **79 variables** y más de 8.000 observaciones. Gran parte de esta información consiste en metadatos técnicos (`scrape_id`), textos no estructurados (`description`, `urls`) o redundancias que introducen ruido en nuestro análisis.
+El dataset original de Airbnb (`listings.csv`) cuenta con **79
+variables** y más de 8.000 observaciones. Gran parte de esta información
+consiste en metadatos técnicos (`scrape_id`), textos no estructurados
+(`description`, `urls`) o redundancias que introducen ruido en nuestro
+análisis.
 
-Para abordar las tres preguntas de negocio planteadas (Segmentación por barrio, Predicción de Precio y Análisis Geoespacial), hemos ejecutado una **selección estratégica de características (Feature Selection)**. Hemos reducido la dimensionalidad del dataset a **20 variables clave**, agrupadas en cuatro dimensiones funcionales que explican la varianza del mercado:
+Para abordar las tres preguntas de negocio planteadas (Segmentación por
+barrio, Predicción de Precio y Análisis Geoespacial), hemos ejecutado
+una **selección estratégica de características (Feature Selection)**.
+Hemos reducido la dimensionalidad del dataset a **20 variables clave**,
+agrupadas en cuatro dimensiones funcionales que explican la varianza del
+mercado:
 
 #### **A. Dimensiones Estructurales ("El Hardware")**
 
-Variables necesarias para estandarizar la comparación entre alojamientos heterogéneos.
+Variables necesarias para estandarizar la comparación entre alojamientos
+heterogéneos.
 
--   **`room_type`**, **`accommodates`**, **`bedrooms`**: Definen la capacidad real y el modelo de alojamiento (privado vs. compartido). Son los predictores base del precio.
+-   **`room_type`**, **`accommodates`**, **`bedrooms`**: Definen la
+    capacidad real y el modelo de alojamiento (privado vs. compartido).
+    Son los predictores base del precio.
 
--   **`bathrooms_text`**: Seleccionada para ingeniería de características. El número de baños es un indicador crítico de lujo/gama alta que a menudo se omite en análisis básicos.
+-   **`bathrooms_text`**: Seleccionada para ingeniería de
+    características. El número de baños es un indicador crítico de
+    lujo/gama alta que a menudo se omite en análisis básicos.
 
--   **`amenities`**: Aunque es texto, la transformaremos para cuantificar el "valor añadido" (piscina, aire acondicionado) que justifica sobreprecios.
+-   **`amenities`**: Aunque es texto, la transformaremos para
+    cuantificar el "valor añadido" (piscina, aire acondicionado) que
+    justifica sobreprecios.
 
 #### **B. Dimensiones Económicas y de Gestión ("El Negocio")**
 
-Variables que permiten perfilar el comportamiento del anfitrión (Profesional vs. Particular).
+Variables que permiten perfilar el comportamiento del anfitrión
+(Profesional vs. Particular).
 
--   **`price`**: Variable objetivo principal. Requiere limpieza de caracteres (`$`, `,`) para su tratamiento numérico.
+-   **`price`**: Variable objetivo principal. Requiere limpieza de
+    caracteres (`$`, `,`) para su tratamiento numérico.
 
--   **`availability_365`**: Proxy de dedicación. Distingue entre negocios de dedicación exclusiva y alquileres esporádicos.
+-   **`availability_365`**: Proxy de dedicación. Distingue entre
+    negocios de dedicación exclusiva y alquileres esporádicos.
 
--   **`calculated_host_listings_count`** e **`instant_bookable`**: Métricas de profesionalización. Un anfitrión con múltiples propiedades y reserva inmediata tiene un perfil de riesgo y rotación distinto.
+-   **`calculated_host_listings_count`** e **`instant_bookable`**:
+    Métricas de profesionalización. Un anfitrión con múltiples
+    propiedades y reserva inmediata tiene un perfil de riesgo y rotación
+    distinto.
 
 #### **C. Dimensiones de Reputación y Calidad ("El Valor Percibido")**
 
 Cruciales para el Clustering y para explicar outliers de precio.
 
--   **`reviews_per_month`**: El mejor indicador de la demanda actual y la rotación del activo.
+-   **`reviews_per_month`**: El mejor indicador de la demanda actual y
+    la rotación del activo.
 
--   **`review_scores_rating`**, **`_cleanliness`**, **`_location`**: Variables de calidad subjetiva. Permiten detectar alojamientos "sobrevalorados" (caros pero con mala nota) o "joyas ocultas".
+-   **`review_scores_rating`**, **`_cleanliness`**, **`_location`**:
+    Variables de calidad subjetiva. Permiten detectar alojamientos
+    "sobrevalorados" (caros pero con mala nota) o "joyas ocultas".
 
 #### **D. Dimensiones Geoespaciales ("La Ubicación")**
 
 Necesarias para el análisis continuo del espacio urbano.
 
--   **`latitude`** / **`longitude`**: Materia prima para el cálculo de distancia euclídea/haversine a la Giralda (Pregunta 3).
+-   **`latitude`** / **`longitude`**: Materia prima para el cálculo de
+    distancia euclídea/haversine a la Giralda (Pregunta 3).
 
--   **`neighbourhood_cleansed`**: Para establecer la línea base de precios por zona administrativa (Pregunta 2).
+-   **`neighbourhood_cleansed`**: Para establecer la línea base de
+    precios por zona administrativa (Pregunta 2).
 
 ```{r}
 library(tidyverse) 
@@ -98,7 +182,8 @@ listings <- read.csv("./csv/listings.csv")
 str(listings)
 ```
 
-Antes de proceder al preprocesamiento, realizamos una inspección técnica del dataset crudo. De esta forma podemos analizar aspectos claves como:
+Antes de proceder al preprocesamiento, realizamos una inspección técnica
+del dataset crudo. De esta forma podemos analizar aspectos claves como:
 
 -   Duplicidad
 
@@ -138,7 +223,10 @@ print(head(listings$price))
 
 ## 2.1. EDA inicial
 
-En este punto hemos realizado un EDA pequeño, para hacernos una idea de donde partíamos, con qué tipo de datos tratamos, formato, valores nulos, incongruencias, en definitiva, qué sobra y qué nos parece interesante tratar y preprocesar en detalle.
+En este punto hemos realizado un EDA pequeño, para hacernos una idea de
+donde partíamos, con qué tipo de datos tratamos, formato, valores nulos,
+incongruencias, en definitiva, qué sobra y qué nos parece interesante
+tratar y preprocesar en detalle.
 
 ```{r}
 library(ggplot2)
@@ -186,7 +274,11 @@ ggplot(na_summary, aes(x = reorder(columna, na_pct), y = na_pct)) +
   geom_text(aes(label = round(na_pct, 1)), hjust = -0.2, size = 3)
 ```
 
-Tras este pequeño análisis decidimos seleccionar las columnas que nos impactan. Así, podemos centrarnos en analizar profundamente solo las variables necesarias, y hacer el preprocesado detallado y centrado en nuestro caso concreto y no extendernos en algo que nos nos dará fruto para resolver nuestra hipótesis planteadas.
+Tras este pequeño análisis decidimos seleccionar las columnas que nos
+impactan. Así, podemos centrarnos en analizar profundamente solo las
+variables necesarias, y hacer el preprocesado detallado y centrado en
+nuestro caso concreto y no extendernos en algo que nos nos dará fruto
+para resolver nuestra hipótesis planteadas.
 
 ```{r}
 # 1. SELECCIÓN DE COLUMNAS
@@ -306,39 +398,74 @@ glimpse(df_final)
 summary(df_final$minimum_nights)
 ```
 
-Para garantizar la robustez de los modelos posteriores (Clustering y Regresión), hemos implementado una transformación sobre el dataset original (`df_raw_selected`). Las operaciones realizadas son las siguientes:
+Para garantizar la robustez de los modelos posteriores (Clustering y
+Regresión), hemos implementado una transformación sobre el dataset
+original (`df_raw_selected`). Las operaciones realizadas son las
+siguientes:
 
-**1. Limpieza y Filtrado de la Variable Objetivo (`Price`)** La variable precio original contenía caracteres no numéricos (`$` y `,`). Se ha convertido a tipo numérico y posterior filtrado.
+**1. Limpieza y Filtrado de la Variable Objetivo (`Price`)** La variable
+precio original contenía caracteres no numéricos (`$` y `,`). Se ha
+convertido a tipo numérico y posterior filtrado.
 
--   **Decisión:** Se han eliminado registros con precios inferiores a **10€** (errores de carga o precios ínfimos) y superiores a **1.000€** (outliers extremos/mansiones).\
+-   **Decisión:** Se han eliminado registros con precios inferiores a
+    **10€** (errores de carga o precios ínfimos) y superiores a
+    **1.000€** (outliers extremos/mansiones).\
     \
-    Esto reduce la asimetría de la distribución y evita que los valores extremos distorsionen la media y los centroides en el análisis de K-Means.
+    Esto reduce la asimetría de la distribución y evita que los valores
+    extremos distorsionen la media y los centroides en el análisis de
+    K-Means.
 
-**2. Extracción de Información Estructural (`Bathrooms`)** La columna `bathrooms_text` presentaba información no estructurada (ej. *"1.5 baths"*). Hemos realizado las siguientes acciones:
+**2. Extracción de Información Estructural (`Bathrooms`)** La columna
+`bathrooms_text` presentaba información no estructurada (ej. *"1.5
+baths"*). Hemos realizado las siguientes acciones:
 
 -   Extraído el valor numérico.
 
--   Hemos imputado el valor **0.5** para los casos etiquetados como *"Half-bath"*.
+-   Hemos imputado el valor **0.5** para los casos etiquetados como
+    *"Half-bath"*.
 
--   Hemos asumido un valor estándar de **1** baño para los valores nulos restantes.
+-   Hemos asumido un valor estándar de **1** baño para los valores nulos
+    restantes.
 
-**3. Características de Servicios (`Amenities`)** La columna `amenities` es una lista de texto JSON compleja, muy interesante porque podemos recoger qué características "deluxe" tienen los pisos. Para ello, hemos creado tres nuevas variables sintéticas y asi cuantificar el valor añadido:
+**3. Características de Servicios (`Amenities`)** La columna `amenities`
+es una lista de texto JSON compleja, muy interesante porque podemos
+recoger qué características "deluxe" tienen los pisos. Para ello, hemos
+creado tres nuevas variables sintéticas y asi cuantificar el valor
+añadido:
 
--   **`amenities_count`**: Conteo del número total de servicios ofrecidos, como indicador general del nivel de equipamiento.
+-   **`amenities_count`**: Conteo del número total de servicios
+    ofrecidos, como indicador general del nivel de equipamiento.
 
--   **`has_pool`** y **`has_ac`**: Variables binarias (1/0) creadas mediante búsqueda de patrones de texto. Consideramos que en un sitio como Sevilla, la piscina y el aire acondicionado son críticos para el precio (Pregunta 2).
+-   **`has_pool`** y **`has_ac`**: Variables binarias (1/0) creadas
+    mediante búsqueda de patrones de texto. Consideramos que en un sitio
+    como Sevilla, la piscina y el aire acondicionado son críticos para
+    el precio (Pregunta 2).
 
-**4. Estrategia seguida para la Imputación de Valores Nulos** Para no perder observaciones valiosas, hemos aplicado una estrategia de imputación diferente, según cada variable:
+**4. Estrategia seguida para la Imputación de Valores Nulos** Para no
+perder observaciones valiosas, hemos aplicado una estrategia de
+imputación diferente, según cada variable:
 
--   **Actividad (`reviews_per_month`):** Los nulos se imputan con **0**, interpretando la ausencia de dato como actividad nula.
+-   **Actividad (`reviews_per_month`):** Los nulos se imputan con **0**,
+    interpretando la ausencia de dato como actividad nula.
 
--   **Estructural (`bedrooms`):** Se imputa con la **mediana condicionada** por la tipologia del alojamiento `room_type`, en lugar de emplear la mediana global. Esto nos permite preservar la heterogeneidad y la varianza intrinseca de cada modelo de alojamiento, evitando sesgos.
+-   **Estructural (`bedrooms`):** Se imputa con la **mediana
+    condicionada** por la tipologia del alojamiento `room_type`, en
+    lugar de emplear la mediana global. Esto nos permite preservar la
+    heterogeneidad y la varianza intrinseca de cada modelo de
+    alojamiento, evitando sesgos.
 
--   **Calidad (`review_scores`):** Se imputa con la **media** global para mantener la neutralidad de la observación sin penalizarla artificialmente.
+-   **Calidad (`review_scores`):** Se imputa con la **media** global
+    para mantener la neutralidad de la observación sin penalizarla
+    artificialmente.
 
--   **Noches minimas (`minimum_nights`**): Se imputan los nulos con **1**, asumiendo la estancia mínima estándar.
+-   **Noches minimas (`minimum_nights`**): Se imputan los nulos con
+    **1**, asumiendo la estancia mínima estándar.
 
-**5. Selección y Renombrado Final** : hemos generado el dataset `df_final` descartando las variables intermedias sucias (como `bathrooms_text` o el `price` original) y reteniendo únicamente las **19 variables limpias y transformadas** que necesitaremos para trabajar los tres modelos del proyecto.
+**5. Selección y Renombrado Final** : hemos generado el dataset
+`df_final` descartando las variables intermedias sucias (como
+`bathrooms_text` o el `price` original) y reteniendo únicamente las **19
+variables limpias y transformadas** que necesitaremos para trabajar los
+tres modelos del proyecto.
 
 ```{r}
 head(df_final)
@@ -413,7 +540,12 @@ ggplot(df_eda, aes(x = amenities_count)) +
 
 ### 3.1.4 Validación de Normalidad del Precio
 
-¿Por qué este gráfico? Siguiendo el Tema 5 (Análisis Univariante), usamos el QQ-Plot para comprobar si la variable objetivo (price) sigue una distribución normal. La desviación de los puntos respecto a la línea diagonal nos confirmará visualmente la fuerte asimetría positiva de los precios, justificando así posibles transformaciones (como aplicar logaritmos) antes de entrenar nuestros modelos de Regresión.
+¿Por qué este gráfico? Siguiendo el Tema 5 (Análisis Univariante),
+usamos el QQ-Plot para comprobar si la variable objetivo (price) sigue
+una distribución normal. La desviación de los puntos respecto a la línea
+diagonal nos confirmará visualmente la fuerte asimetría positiva de los
+precios, justificando así posibles transformaciones (como aplicar
+logaritmos) antes de entrenar nuestros modelos de Regresión.
 
 ```{r}
 # 3.1.4Normal QQ-Plot (Validación de Normalidad del Precio)
@@ -542,11 +674,23 @@ ggpairs(df_pair,
 ## 4.1. Segmentación del Mercado
 
 Hipótesis planteada: *\
-¿Podemos identificar clústeres de comportamiento que demuestren que el mercado de Airbnb se estructura por modelos de negocio y estrategias financieras y no por barrios?*\
+¿Podemos identificar clústeres de comportamiento que demuestren que el
+mercado de Airbnb se estructura por modelos de negocio y estrategias
+financieras y no por barrios?*\
 
-Queremos comprobar si la realidad del mercado ignora las fronteras del mapa. Por ejemplo, buscamos identificar si existen auténticos "hoteles encubiertos" o alojamientos de lujo operando en barrios periféricos y de rentas más bajas; o si, por el contrario, encontramos habitaciones de bajo coste y altísima rotación camufladas en los distritos supuestamente más exclusivos de la ciudad.
+Queremos comprobar si la realidad del mercado ignora las fronteras del
+mapa. Por ejemplo, buscamos identificar si existen auténticos "hoteles
+encubiertos" o alojamientos de lujo operando en barrios periféricos y de
+rentas más bajas; o si, por el contrario, encontramos habitaciones de
+bajo coste y altísima rotación camufladas en los distritos supuestamente
+más exclusivos de la ciudad.
 
-Para descubrir estas realidades ocultas tras los precios, la disponibilidad y el volumen de reservas, aplicaremos técnicas de aprendizaje automático no supervisado (**Clustering K-Means**). Al no indicarle al algoritmo en qué barrio está cada piso, obligaremos a la matemática a agrupar los alojamientos basándose **única y exclusivamente en su rendimiento económico y operativo**.
+Para descubrir estas realidades ocultas tras los precios, la
+disponibilidad y el volumen de reservas, aplicaremos técnicas de
+aprendizaje automático no supervisado (**Clustering K-Means**). Al no
+indicarle al algoritmo en qué barrio está cada piso, obligaremos a la
+matemática a agrupar los alojamientos basándose **única y exclusivamente
+en su rendimiento económico y operativo**.
 
 ```{r}
 library(cluster)    
@@ -615,49 +759,96 @@ ggplot(df_cluster, aes(x = reorder(neighbourhood_group_cleansed, price, median),
        fill = "Tipo de Clúster")
 ```
 
-Para que nuestra segmentación de mercado sea objetiva, hemos dejado que la propia estructura de los datos nos revele su división natural, en lugar de forzar al algoritmo a buscar un número arbitrario de grupos (como podrían ser los 11 distritos administrativos que compararemos más adelante).
+Para que nuestra segmentación de mercado sea objetiva, hemos dejado que
+la propia estructura de los datos nos revele su división natural, en
+lugar de forzar al algoritmo a buscar un número arbitrario de grupos
+(como podrían ser los 11 distritos administrativos que compararemos más
+adelante).
 
-Para lograr esto, hemos aplicado el **Análisis de Silueta (Silhouette Index)**. Esta técnica de validación evalúa el rendimiento del clustering midiendo dos factores clave para cada posible valor de $k$:
+Para lograr esto, hemos aplicado el **Análisis de Silueta (Silhouette
+Index)**. Esta técnica de validación evalúa el rendimiento del
+clustering midiendo dos factores clave para cada posible valor de $k$:
 
-1.  **Cohesión:** Qué tan similares son los alojamientos dentro de un mismo grupo.
+1.  **Cohesión:** Qué tan similares son los alojamientos dentro de un
+    mismo grupo.
 
-2.  **Separación:** Qué tan bien diferenciados están de los alojamientos de los demás grupos.
+2.  **Separación:** Qué tan bien diferenciados están de los alojamientos
+    de los demás grupos.
 
-El algoritmo nos indicó que el pico máximo de rendimiento (el punto donde los grupos son más sólidos y diferentes entre sí) se encuentra exactamente en $k=5$.
+El algoritmo nos indicó que el pico máximo de rendimiento (el punto
+donde los grupos son más sólidos y diferentes entre sí) se encuentra
+exactamente en $k=5$.
 
 **Aplicación al Modelo K-Means:**
 
-Basándonos en este criterio estrictamente matemático, hemos entrenado nuestro modelo definitivo de K-Means forzando la creación de 5 centros. Esto nos garantiza que los cinco perfiles resultantes no son una agrupación casual, sino la **estructura económica real y estadísticamente robusta** que subyace en el mercado inmobiliario turístico de la ciudad.
+Basándonos en este criterio estrictamente matemático, hemos entrenado
+nuestro modelo definitivo de K-Means forzando la creación de 5 centros.
+Esto nos garantiza que los cinco perfiles resultantes no son una
+agrupación casual, sino la **estructura económica real y
+estadísticamente robusta** que subyace en el mercado inmobiliario
+turístico de la ciudad.
 
-A continuación, procedemos a analizar la naturaleza de estos 5 clústeres descubiertos.
+A continuación, procedemos a analizar la naturaleza de estos 5 clústeres
+descubiertos.
 
--   **Morado y Verde** (podríamos denorminarlos como Lujo y Macro-Agencias)**: disposición** **céntrica.**
+-   **Morado y Verde** (podríamos denorminarlos como Lujo y
+    Macro-Agencias)**: disposición** **céntrica.**
 
-    -   Representan hasta el 20% del mercado en distritos ricos y céntricos (Casco Antiguo, Nervión).
+    -   Representan hasta el 20% del mercado en distritos ricos y
+        céntricos (Casco Antiguo, Nervión).
 
-    -   Desaparecen casi por completo en la periferia (Cerro-Amate, Macarena).
+    -   Desaparecen casi por completo en la periferia (Cerro-Amate,
+        Macarena).
 
-        > **Posible motivo:** El capital profesional y premium solo invierten donde está garantizado el turista internacional de alto presupuesto.
+        > **Posible motivo:** El capital profesional y premium solo
+        > invierten donde está garantizado el turista internacional de
+        > alto presupuesto.
 
--   **Rojo (**podríamos denorminarlos como Alquiler Turístico Estrella): **el modelo transversal.**
+-   **Rojo (**podríamos denorminarlos como Alquiler Turístico Estrella):
+    **el modelo transversal.**
 
-    -   Es la base de Airbnb: domina casi el 50% de la oferta en *todos* los distritos por igual.
+    -   Es la base de Airbnb: domina casi el 50% de la oferta en *todos*
+        los distritos por igual.
 
-        > **Posible motivo:** se trata de pequeños propietarios que buscan alta rentabilidad mediante rotación rápida, en toda Sevilla, sin importar la lejanía al centro.
+        > **Posible motivo:** se trata de pequeños propietarios que
+        > buscan alta rentabilidad mediante rotación rápida, en toda
+        > Sevilla, sin importar la lejanía al centro.
 
--   **Azul (**podríamos denorminarlos como Media y Larga Estancia): **refugio de la periferia.**
+-   **Azul (**podríamos denorminarlos como Media y Larga Estancia):
+    **refugio de la periferia.**
 
-    -   Su proporción crece notablemente en barrios alejados del circuito turístico (como Macarena-Norte o Cerro-Amate).
+    -   Su proporción crece notablemente en barrios alejados del
+        circuito turístico (como Macarena-Norte o Cerro-Amate).
 
-        > **Posible motivo:** Al no recibir turistas de fin de semana, los dueños adaptan su negocio alquilando a trabajadores temporales o estudiantes (pisos disponibles todo el año, pero con estancias más largas y menos reseñas).
+        > **Posible motivo:** Al no recibir turistas de fin de semana,
+        > los dueños adaptan su negocio alquilando a trabajadores
+        > temporales o estudiantes (pisos disponibles todo el año, pero
+        > con estancias más largas y menos reseñas).
 
-Una vez consolidados nuestros 5 modelos de negocio mediante el índice de silueta, nos surgió la curiosidad de segmentar haciendo obligatoria la k igual al numero de distritos definidos, para responder definitivamente a nuestra hipótesis principal: *¿Es verdaderamente el modelo de negocio independiente de la zona, o estamos ignorando la importancia de los barrios?*
+Una vez consolidados nuestros 5 modelos de negocio mediante el índice de
+silueta, nos surgió la curiosidad de segmentar haciendo obligatoria la k
+igual al numero de distritos definidos, para responder definitivamente a
+nuestra hipótesis principal: *¿Es verdaderamente el modelo de negocio
+independiente de la zona, o estamos ignorando la importancia de los
+barrios?*
 
-Para analizar esta cuestión, diseñamos un experimento de control. El planteamiento fue el siguiente: si el comportamiento económico de un piso dependiera puramente de su ubicación, forzando al algoritmo a generar exactamente **11 clústeres** (coincidiendo con los 11 distritos administrativos de Sevilla), debería ser capaz de "montar" el mapa político de la ciudad basándose solo en los datos.
+Para analizar esta cuestión, diseñamos un experimento de control. El
+planteamiento fue el siguiente: si el comportamiento económico de un
+piso dependiera puramente de su ubicación, forzando al algoritmo a
+generar exactamente **11 clústeres** (coincidiendo con los 11 distritos
+administrativos de Sevilla), debería ser capaz de "montar" el mapa
+político de la ciudad basándose solo en los datos.
 
-El **objetivo** de esta comparativa es comprobar si al darle al algoritmo el mismo número de opciones que distritos, cada barrio se asignaba a un clúster único o si por el contrario, los distritos se fragmentaban.
+El **objetivo** de esta comparativa es comprobar si al darle al
+algoritmo el mismo número de opciones que distritos, cada barrio se
+asignaba a un clúster único o si por el contrario, los distritos se
+fragmentaban.
 
-Esto es clave porque nos permite demostrar empíricamente si las fronteras que vemos en los mapas (los códigos postales) tienen algún valor real a nivel financiero y operativo dentro de la plataforma Airbnb, o si son meramente un constructo administrativo que el mercado turístico ignora por completo.
+Esto es clave porque nos permite demostrar empíricamente si las
+fronteras que vemos en los mapas (los códigos postales) tienen algún
+valor real a nivel financiero y operativo dentro de la plataforma
+Airbnb, o si son meramente un constructo administrativo que el mercado
+turístico ignora por completo.
 
 A continuación, analizamos los resultados visuales de este experimento:
 
@@ -685,20 +876,34 @@ ggplot(df_cluster, aes(x = neighbourhood_group_cleansed, fill = Cluster_11)) +
 
 **El Mito de los barrios (k=11)**
 
-Para validar la segmentación de 5 modelos de negocio, se planteó una prueba de refutación:
+Para validar la segmentación de 5 modelos de negocio, se planteó una
+prueba de refutación:
 
 *Si forzamos al algoritmo a buscar 11 clústeres,\
 ¿será capaz de mapear exactamente los 11 distritos de Sevilla?*
 
 Los resultados del gráfico k=11 rechaza esta hipótesis claramente:
 
--   **Hiper-fragmentación por distrito:** En lugar de obtener barras de un solo color sólido (lo que indicaría que cada barrio tiene un comportamiento único y uniforme), observamos que todos los distritos están fragmentados en diferentes clusteres matemáticos.
+-   **Hiper-fragmentación por distrito:** En lugar de obtener barras de
+    un solo color sólido (lo que indicaría que cada barrio tiene un
+    comportamiento único y uniforme), observamos que todos los distritos
+    están fragmentados en diferentes clusteres matemáticos.
 
-    > **Conclusión:** La gran mezcla de clusteres en el experimento de $k=11$ demuestra que **la geografía administrativa no dicta el modelo de negocio**. Un alojamiento no se comporta de una manera determinada simplemente por pertenecer al distrito de "San Pablo" o "Los Remedios". Las verdaderas fronteras del mercado en Sevilla son invisibles. Podríamos deducir que están definidas por estrategias de inversión (similares a los 5 perfiles definidos en el primer experimento), las cuales conviven y compiten de forma superpuesta incluso en las mismas calles de sevilla.
+    > **Conclusión:** La gran mezcla de clusteres en el experimento de
+    > $k=11$ demuestra que **la geografía administrativa no dicta el
+    > modelo de negocio**. Un alojamiento no se comporta de una manera
+    > determinada simplemente por pertenecer al distrito de "San Pablo"
+    > o "Los Remedios". Las verdaderas fronteras del mercado en Sevilla
+    > son invisibles. Podríamos deducir que están definidas por
+    > estrategias de inversión (similares a los 5 perfiles definidos en
+    > el primer experimento), las cuales conviven y compiten de forma
+    > superpuesta incluso en las mismas calles de sevilla.
 
 ### 4.1.1.Visualización avanzada de clustering
 
-Hemos analizado un poco más en detalle las relaciones entre diferentes variables que consideramos interesantes ampliar su estudio, con los 2 gráficos siguientes:
+Hemos analizado un poco más en detalle las relaciones entre diferentes
+variables que consideramos interesantes ampliar su estudio, con los 2
+gráficos siguientes:
 
 > ### Análisis de Distribución de Precios según el modelo de Negocio
 
@@ -716,27 +921,98 @@ ggplot(df_cluster, aes(x = df_cluster, y = price, fill = Cluster_11)) +
   theme(legend.position = "none")
 ```
 
-El analisis de dispersión de precios a través de los boxplots revela la estructura financiera que sostiene cada modelo de negocio en Sevilla:
+**El Mito de los barrios (k=11)**
 
--   **1. La Guerra de Precios en la base del mercado (Rojo, Azul y Verde):** Los clusteres de *Alta Rotación*, *Particular Ocasional* y *Media/Larga Estancia* presentan medianas muy similares (todas rondando los 100€ - 120€) y con cajas muy compactas.
+Para validar la segmentación de 5 modelos de negocio, se planteó una
+prueba de refutación:
 
-    -   Esto demuestra que en el mercado estándar hay mucha competencia y los precios están estandarizados. Como no pueden competir subiendo el precio (el mercado no lo aceptaría), los anfitriones se diferencian por su estrategia de disponibilidad y volumen de reservas.
+*Si forzamos al algoritmo a buscar 11 clústeres,\
+¿será capaz de mapear exactamente los 11 distritos de Sevilla?*
 
--   **2. El recargo por la Profesionalización (Macro-Agencias - Morado):** A diferencia de los particulares, la caja de las *Macro-Agencias* está claramente desplazada hacia la derecha, con una mediana cercana a los 150€. Además, es una caja relativamente estrecha, lo que indica bastante control en sus tarifas.
+Los resultados del gráfico k=11 rechaza esta hipótesis claramente:
 
-    -   Los grandes inversores no operan en la base del mercado low-cost. Su estrategia se basa en ofrecer un estándar de calidad, diseño o servicio que les permite cobrar un sobreprecio constante, asegurando así su margen de rentabilidad a pesar de ese sobrecoste.
+-   **Hiper-fragmentación por distrito:** En lugar de obtener barras de
+    un solo color sólido (lo que indicaría que cada barrio tiene un
+    comportamiento único y uniforme), observamos que todos los distritos
+    están fragmentados en diferentes clusteres matemáticos.
 
--   **3. La extrema volatilidad del Lujo (Naranja):** Es la caja que más destaca visualmente. Su mediana se dispara entorno a los 350€, pero lo más sorprendente es su anchura (rango intercuartílico) y la gran cantidad de valores atípicos (los puntos grises) que se estiran hasta los 1.000€.
+    > **Conclusión:** La gran mezcla de clusteres en el experimento de
+    > $k=11$ demuestra que **la geografía administrativa no dicta el
+    > modelo de negocio**. Un alojamiento no se comporta de una manera
+    > determinada simplemente por pertenecer al distrito de "San Pablo"
+    > o "Los Remedios". Las verdaderas fronteras del mercado en Sevilla
+    > son invisibles. Podríamos deducir que están definidas por
+    > estrategias de inversión (similares a los 5 perfiles definidos en
+    > el primer experimento), las cuales conviven y compiten de forma
+    > superpuesta incluso en las mismas calles de sevilla.
 
-    -   El mercado de lujo está muy poco estandarizado. Mientras que un piso normal tiene un precio tope definido, en el lujo "no hay límite". El precio ya no depende del mercado base, sino de características exclusivas únicas (vistas directas a la Giralda, piscinas privadas, capacidad para 10 personas, etc.).
+### 4.1.1.Visualización avanzada de clustering
+
+Hemos analizado un poco más en detalle las relaciones entre diferentes
+variables que consideramos interesantes ampliar su estudio, con los 2
+gráficos siguientes:
+
+> ### Análisis de Distribución de Precios según el modelo de Negocio
+
+```{r}
+# GRÁFICO 2: DISTRIBUCIÓN DE PRECIOS POR CLUSTER (K=5)
+ggplot(df_cluster, aes(x = Cluster, y = price, fill = Cluster)) +
+  geom_boxplot(alpha = 0.8, outlier.color = "grey", outlier.size = 1) +
+  scale_fill_brewer(palette = "Set1") +
+  coord_flip() + # Barras horizontales
+  theme_minimal() +
+  labs(title = "Rango de Precios según el Modelo de Negocio Definido",
+       subtitle = "Distribución estadística e identificación de valores atípicos",
+       x = "",
+       y = "Precio por noche (€)") +
+  theme(legend.position = "none")
+```
+
+El analisis de dispersión de precios a través de los boxplots revela la
+estructura financiera que sostiene cada modelo de negocio en Sevilla:
+
+-   **1. La Guerra de Precios en la base del mercado (Rojo, Azul y
+    Verde):** Los clusteres de *Alta Rotación*, *Particular Ocasional* y
+    *Media/Larga Estancia* presentan medianas muy similares (todas
+    rondando los 100€ - 120€) y con cajas muy compactas.
+
+    -   Esto demuestra que en el mercado estándar hay mucha competencia
+        y los precios están estandarizados. Como no pueden competir
+        subiendo el precio (el mercado no lo aceptaría), los anfitriones
+        se diferencian por su estrategia de disponibilidad y volumen de
+        reservas.
+
+-   **2. El recargo por la Profesionalización (Macro-Agencias -
+    Morado):** A diferencia de los particulares, la caja de las
+    *Macro-Agencias* está claramente desplazada hacia la derecha, con
+    una mediana cercana a los 150€. Además, es una caja relativamente
+    estrecha, lo que indica bastante control en sus tarifas.
+
+    -   Los grandes inversores no operan en la base del mercado
+        low-cost. Su estrategia se basa en ofrecer un estándar de
+        calidad, diseño o servicio que les permite cobrar un sobreprecio
+        constante, asegurando así su margen de rentabilidad a pesar de
+        ese sobrecoste.
+
+-   **3. La extrema volatilidad del Lujo (Naranja):** Es la caja que más
+    destaca visualmente. Su mediana se dispara entorno a los 350€, pero
+    lo más sorprendente es su anchura (rango intercuartílico) y la gran
+    cantidad de valores atípicos (los puntos grises) que se estiran
+    hasta los 1.000€.
+
+    -   El mercado de lujo está muy poco estandarizado. Mientras que un
+        piso normal tiene un precio tope definido, en el lujo "no hay
+        límite". El precio ya no depende del mercado base, sino de
+        características exclusivas únicas (vistas directas a la Giralda,
+        piscinas privadas, capacidad para 10 personas, etc.).
 
 > ### Análisis de Estrategia Comercial: Matriz Precio vs. Rotación:
 
 ```{r}
 # GRÁFICO 3: MATRIZ DE RENTABILIDAD
-ggplot(df_cluster, aes(x = reviews_per_month, y = price, color = df_cluster)) +
+ggplot(df_cluster, aes(x = reviews_per_month, y = price, color = Cluster)) +
   geom_point(alpha = 0.4) +
-  facet_wrap(~df_cluster, scales = "free_x") + 
+  facet_wrap(~Cluster, scales = "free_x") + 
   scale_color_brewer(palette = "Set1") +
   theme_minimal() +
   labs(title = "Matriz Precio vs Rotación",
@@ -746,41 +1022,104 @@ ggplot(df_cluster, aes(x = reviews_per_month, y = price, color = df_cluster)) +
   theme(legend.position = "none")
 ```
 
-Al desglosar la relación entre el precio por noche, el margen, y las reseñas mensuales, volumen, a través de un gráfico de dispersión, podemos observar visualmente las distintas "fórmulas de rentabilidad" que emplean los anfitriones de Sevilla:
+![](http://127.0.0.1:46336/chunk_output/0B9C51A17aa1b481/884DFC4F/cn1c4046yoa5j/000017.png)
 
--   **Estrategia de Volumen (El panel Rojo - Alta Rotación):** El gráfico demuestra visualmente por qué este cluster recibe su nombre. Mientras el resto de modelos rara vez superan las 4 o 5 reseñas al mes, este grupo genera una cola extrema que llega hasta las 20 reseñas mensuales. Su estrategia está clara: mantienen precios estrictamente bajos, concentrados en el límite inferior del eje Y, para maximizar la ocupación de fin de semana.
+Al desglosar la relación entre el precio por noche, el margen, y las
+reseñas mensuales, volumen, a través de un gráfico de dispersión,
+podemos observar visualmente las distintas "fórmulas de rentabilidad"
+que emplean los anfitriones de Sevilla:
 
--   **Estrategia de Margen (El panel Naranja - Lujo):** Representa exactamente el modelo opuesto al anterior. La nube de puntos tiene forma vertical. Sacrifican totalmente el volumen de reservas (eje X muy corto, casi todo concentrado entre 0 y 2 reseñas/mes) para disparar el precio de la noche, con precios tan distribuidos llegando incluso a los 1.000€. Su rentabilidad se basa en pocas reservas de muchísimo valor.
+-   **Estrategia de Volumen (El panel Rojo - Alta Rotación):** El
+    gráfico demuestra visualmente por qué este cluster recibe su nombre.
+    Mientras el resto de modelos rara vez superan las 4 o 5 reseñas al
+    mes, este grupo genera una cola extrema que llega hasta las 20
+    reseñas mensuales. Su estrategia está clara: mantienen precios
+    estrictamente bajos, concentrados en el límite inferior del eje Y,
+    para maximizar la ocupación de fin de semana.
 
--   **La "Zona de Confort" del mercado (Paneles Azul, Verde y Morado):** Los *Particulares*, la *Media Estancia* y las *Macro-Agencias* tienen nubes de puntos densas, es decir, operan en el cuadrante inferior izquierdo (precios moderados y rotación baja/media). Su éxito financiero no depende de este gráfico, sino de la variable de "Disponibilidad Anual" para mantener los pisos activos el máximo tiempo posible.
+-   **Estrategia de Margen (El panel Naranja - Lujo):** Representa
+    exactamente el modelo opuesto al anterior. La nube de puntos tiene
+    forma vertical. Sacrifican totalmente el volumen de reservas (eje X
+    muy corto, casi todo concentrado entre 0 y 2 reseñas/mes) para
+    disparar el precio de la noche, con precios tan distribuidos
+    llegando incluso a los 1.000€. Su rentabilidad se basa en pocas
+    reservas de muchísimo valor.
+
+-   **La "Zona de Confort" del mercado (Paneles Azul, Verde y Morado):**
+    Los *Particulares*, la *Media Estancia* y las *Macro-Agencias*
+    tienen nubes de puntos densas, es decir, operan en el cuadrante
+    inferior izquierdo (precios moderados y rotación baja/media). Su
+    éxito financiero no depende de este gráfico, sino de la variable de
+    "Disponibilidad Anual" para mantener los pisos activos el máximo
+    tiempo posible.
 
 > ### Conclusiones del K-Means: Estudio del Mercado por Distritos
 
-A través de la segmentación por clustering (K-Means) y el análisis de las [variables operativas y financieras]{.underline}, hemos dado respuesta a nuestra hipótesis inicial, contrastando que la realidad del mercado de alojamientos en Sevilla es mucho más compleja que el simple "estándar del barrio".
+A través de la segmentación por clustering (K-Means) y el análisis de
+las [variables operativas y financieras]{.underline}, hemos dado
+respuesta a nuestra hipótesis inicial, contrastando que la realidad del
+mercado de alojamientos en Sevilla es mucho más compleja que el simple
+"estándar del barrio".
 
 Las conclusiones clave de nuestro estudio son:
 
-**1. El Mito de la Geografía Administrativa (K=5 vs K=11)** El experimento de refutación forzando 11 clústeres demostró una hiper-fragmentación en todos los distritos, confirmando que las fronteras administrativas (los barrios) no dictan el comportamiento económico de un inmueble. En su lugar, hemos identificado que el mercado real se divide en **5 modelos de negocio** (*Alta Rotación, Particular Ocasional, Media/Larga Estancia, Macro-Agencias* y *Lujo*). Estos perfiles compiten y se superponen en las mismas calles: un piso en el centro puede ser una "habitación para salir del paso" y el de al lado un ático gestionado por un fondo de inversión con lógicas financieras completamente opuestas.
+**1. El Mito de la Geografía Administrativa (K=5 vs K=11)** El
+experimento de refutación forzando 11 clústeres demostró una
+hiper-fragmentación en todos los distritos, confirmando que las
+fronteras administrativas (los barrios) no dictan el comportamiento
+económico de un inmueble. En su lugar, hemos identificado que el mercado
+real se divide en **5 modelos de negocio** (*Alta Rotación, Particular
+Ocasional, Media/Larga Estancia, Macro-Agencias* y *Lujo*). Estos
+perfiles compiten y se superponen en las mismas calles: un piso en el
+centro puede ser una "habitación para salir del paso" y el de al lado un
+ático gestionado por un fondo de inversión con lógicas financieras
+completamente opuestas.
 
-**2. Polarización de las Estrategias de Rentabilidad (Volumen vs. Margen)** El análisis de la matriz de rotación frente al precio revela que los anfitriones adoptan estrategias comerciales polarizadas para maximizar su rentabilidad:
+**2. Polarización de las Estrategias de Rentabilidad (Volumen vs.
+Margen)** El análisis de la matriz de rotación frente al precio revela
+que los anfitriones adoptan estrategias comerciales polarizadas para
+maximizar su rentabilidad:
 
--   **Estrategia de Volumen:** es dominada por el cluster de *Alta Rotación*. Mantienen precios estrictamente bajos para forzar una ocupación masiva y constante (hasta 20 reseñas mensuales), rentabilizando el inmueble a base de cantidad de huéspedes.
+-   **Estrategia de Volumen:** es dominada por el cluster de *Alta
+    Rotación*. Mantienen precios estrictamente bajos para forzar una
+    ocupación masiva y constante (hasta 20 reseñas mensuales),
+    rentabilizando el inmueble a base de cantidad de huéspedes.
 
--   **Estrategia de Margen:** es liderada por el cluster de *Lujo*. Renuncian por completo al volumen alto, para disparar el precio por noche medio, asegurando la rentabilidad y viabilidad del negocio con muy pocas reservas de altísimo valor.
+-   **Estrategia de Margen:** es liderada por el cluster de *Lujo*.
+    Renuncian por completo al volumen alto, para disparar el precio por
+    noche medio, asegurando la rentabilidad y viabilidad del negocio con
+    muy pocas reservas de altísimo valor.
 
-**3. Las Tres "Ligas" de precios del mercado** La distribución estadística con boxplots nos confirma que no existe una guerra de precios única, sino tres estratos bien diferenciados:
+**3. Las Tres "Ligas" de precios del mercado** La distribución
+estadística con boxplots nos confirma que no existe una guerra de
+precios única, sino tres estratos bien diferenciados:
 
--   Una **base hipercompetitiva** (Particulares y Alta Rotación), donde los precios están fuertemente estandarizados y los márgenes de subida son mínimos.
+-   Una **base hipercompetitiva** (Particulares y Alta Rotación), donde
+    los precios están fuertemente estandarizados y los márgenes de
+    subida son mínimos.
 
--   Una **capa profesional** (Macro-Agencias), que logra imponer un sobreprecio constante (premium) gracias a su estandarización de servicios extra.
+-   Una **capa profesional** (Macro-Agencias), que logra imponer un
+    sobreprecio constante (premium) gracias a su estandarización de
+    servicios extra.
 
--   Un **techo impensable** (Lujo), caracterizado por una altísima volatilidad y dispersión, donde el precio no depende del mercado base sino de la exclusividad del apartamento.
+-   Un **techo impensable** (Lujo), caracterizado por una altísima
+    volatilidad y dispersión, donde el precio no depende del mercado
+    base sino de la exclusividad del apartamento.
 
-> **Resolución de la Hipótesis:** Definitivamente, **sí podemos identificar clusteres que rompen con el estándar de su zona**. Nuestro análisis demuestra que detrás de un simple "precio por noche" en Airbnb se esconde una compleja estructura. El mercado no se define por "barrios caros y baratos", sino por estrategias de inversión, demostrando que la profesionalización, la disponibilidad y la rotación son los verdaderos motores del éxito inmobiliario turístico en la ciudad.
+> **Resolución de la Hipótesis:** Definitivamente, **sí podemos
+> identificar clusteres que rompen con el estándar de su zona**. Nuestro
+> análisis demuestra que detrás de un simple "precio por noche" en
+> Airbnb se esconde una compleja estructura. El mercado no se define por
+> "barrios caros y baratos", sino por estrategias de inversión,
+> demostrando que la profesionalización, la disponibilidad y la rotación
+> son los verdaderos motores del éxito inmobiliario turístico en la
+> ciudad.
 
 ## 4.2. Determinantes del Precio
 
-¿Somos capaces de calcular el precio justo de cada alojamiento y detectar matemáticamente qué pisos están inflando su valor aprovechando el turismo?
+¿Somos capaces de calcular el precio justo de cada alojamiento y
+detectar matemáticamente qué pisos están inflando su valor aprovechando
+el turismo?
 
 ```{r}
 library(tidyverse)
@@ -793,7 +1132,12 @@ listings_4_2 <- read.csv("./csv/listings_preprocesado.csv")
 
 ### 4.2.1 Entrenamiento del modelo de regresión
 
-Para dar respuesta a esta pregunta hemos decidido utilizar un modelo de **Regresión Lineal Generalizado (GLM)** con distribucción Gamma y enlace logarítmico. Este enfoque nos permite evitar que el modelo prediga precios negativos y para entender que los extras como son la piscina o ubicación no suman una cantidad fija sino un porcentaje sobre el precio base.
+Para dar respuesta a esta pregunta hemos decidido utilizar un modelo de
+**Regresión Lineal Generalizado (GLM)** con distribucción Gamma y enlace
+logarítmico. Este enfoque nos permite evitar que el modelo prediga
+precios negativos y para entender que los extras como son la piscina o
+ubicación no suman una cantidad fija sino un porcentaje sobre el precio
+base.
 
 ```{r}
 # Modelo explicativo base
@@ -810,14 +1154,31 @@ modelo_precio <- glm(price ~ neighbourhood_cleansed +
 summary(modelo_precio)
 ```
 
-El modelo ha sido entrenado con 7374 alojamientos y hemos logrado alcanzar una significancia global muy alta con un p-value de 2.2e-16, validando de esta forma la capacidad del modelo para explicar la estructura de precios del mercado en Sevilla.
+El modelo ha sido entrenado con 7374 alojamientos y hemos logrado
+alcanzar una significancia global muy alta con un p-value de 2.2e-16,
+validando de esta forma la capacidad del modelo para explicar la
+estructura de precios del mercado en Sevilla.
 
-Analizando los resultados que arroja el summary nos podemos dar cuenta de un hallazgo sorprendente, cuanto menos, la mayoría de los barrios que se encuentran en la periferia como son Amate, Bellavista o Pino Montano, muestran p-values muy altos, lo que significa que no tienen un gran impacto en el precio respecto al nivel base.
-Sin embargo, podemos ver cómo el "Efecto Centro" es drástico. Al convertir los coeficientes logarítmicos en porcentajes (exp(β)−1), descubrimos que en el barrio de Santa Cruz tenemos un sobreprecio del 129% solo por la ubicación, seguidos del Arenal con un 112%. También nos ha parecido curioso que barrios como Triana no tienen un impacto tan extremo, teniendo entre un 52% y un 60% de sobreprecio; esto nos indica que su popularidad supera a su cotización real si lo comparamos con el casco histórico
+Analizando los resultados que arroja el summary nos podemos dar cuenta
+de un hallazgo sorprendente, cuanto menos, la mayoría de los barrios que
+se encuentran en la periferia como son Amate, Bellavista o Pino Montano,
+muestran p-values muy altos, lo que significa que no tienen un gran
+impacto en el precio respecto al nivel base. Sin embargo, podemos ver
+cómo el "Efecto Centro" es drástico. Al convertir los coeficientes
+logarítmicos en porcentajes (exp(β)−1), descubrimos que en el barrio de
+Santa Cruz tenemos un sobreprecio del 129% solo por la ubicación,
+seguidos del Arenal con un 112%. También nos ha parecido curioso que
+barrios como Triana no tienen un impacto tan extremo, teniendo entre un
+52% y un 60% de sobreprecio; esto nos indica que su popularidad supera a
+su cotización real si lo comparamos con el casco histórico
 
-Con una devianza explicada cercana al 44%, el modelo explica casi la mitad de la varianza de precios solo con variables estructurales. El 56% restante sugiere que factores intangibles como la decoración, la calidad de las fotos o el trato del anfitrión juegan un papel decisivo en la fijación del precio final en plataformas como Airbnb.
+Con una devianza explicada cercana al 44%, el modelo explica casi la
+mitad de la varianza de precios solo con variables estructurales. El 56%
+restante sugiere que factores intangibles como la decoración, la calidad
+de las fotos o el trato del anfitrión juegan un papel decisivo en la
+fijación del precio final en plataformas como Airbnb.
 
-### 4.2.2 Diagnóstico y validación 
+### 4.2.2 Diagnóstico y validación
 
 ```{r}
 # A. Multicolinealidad (VIF)
@@ -837,11 +1198,26 @@ print("--- Test de Breusch-Pagan ---")
 bptest(modelo_precio)
 ```
 
-Antes de interpretar los coeficientes del modelo lo hemos sometido a unos diagnosticos para asegurarnos que cumple con la teoria de la regresion lineal. Un modelo con coeficientes sesgados puede llevarnos a conclusiones de negocios erroneas.
+Antes de interpretar los coeficientes del modelo lo hemos sometido a
+unos diagnosticos para asegurarnos que cumple con la teoria de la
+regresion lineal. Un modelo con coeficientes sesgados puede llevarnos a
+conclusiones de negocios erroneas.
 
-En primer lugar hemos calculado el Factor de Inflacion de la Varianza para detectar redundancia entre las variables predictoras. Como podemos ver todas las variables tienen un VIF muy bajo, que oscila entre 1,04 y 1,88. Esto nos permite llegar a la conclusion de que la independencia es robusta y que nuestras variables aportan informacion unica y no solapada al precio final.
+En primer lugar hemos calculado el Factor de Inflacion de la Varianza
+para detectar redundancia entre las variables predictoras. Como podemos
+ver todas las variables tienen un VIF muy bajo, que oscila entre 1,04 y
+1,88. Esto nos permite llegar a la conclusion de que la independencia es
+robusta y que nuestras variables aportan informacion unica y no solapada
+al precio final.
 
-Despues hemos aplicado el test de Breusch-Pagan para confirmar si la varianza del error es constante. Dado que nos encontramos un p-value inferior a 0.05 podemos indicar que el modelo comete errores mas grandes en los pisos caros que en los baratos.No obstante, esta es la razón por la que hemos utilizado un modelo GLM con familia Gamma; este algoritmo asume y corrige matemáticamente esta falta de constancia en la varianza, garantizando que nuestros resultados y conclusiones finales sean totalmente válidos y rigurosos.
+Despues hemos aplicado el test de Breusch-Pagan para confirmar si la
+varianza del error es constante. Dado que nos encontramos un p-value
+inferior a 0.05 podemos indicar que el modelo comete errores mas grandes
+en los pisos caros que en los baratos.No obstante, esta es la razón por
+la que hemos utilizado un modelo GLM con familia Gamma; este algoritmo
+asume y corrige matemáticamente esta falta de constancia en la varianza,
+garantizando que nuestros resultados y conclusiones finales sean
+totalmente válidos y rigurosos.
 
 ### 4.2.3 Interpretación del modelo
 
@@ -862,15 +1238,33 @@ ggplot(coeficientes, aes(x = reorder(term, impacto_pct), y = impacto_pct, fill =
        x = "Atributo", y = "Variación Porcentual (%)", fill = "Aporta Valor")
 ```
 
-Tras analizar los coeficientes, podemos ver que, aunque creamos que la ubicación de un piso es el factor más determinante, no es este el único.
+Tras analizar los coeficientes, podemos ver que, aunque creamos que la
+ubicación de un piso es el factor más determinante, no es este el único.
 
-Como podemos ver en la gráfica anterior, el factor que más dispara el precio es la tipología de alojamiento: si es una **habitación de hotel** se añade un **sobrecoste del 48%** frente al apartamento estándar. Esto confirma la existencia de una oferta que se encuentra en manos de profesionales, las cuales operan con un esquema de precios muy superior.
+Como podemos ver en la gráfica anterior, el factor que más dispara el
+precio es la tipología de alojamiento: si es una **habitación de hotel**
+se añade un **sobrecoste del 48%** frente al apartamento estándar. Esto
+confirma la existencia de una oferta que se encuentra en manos de
+profesionales, las cuales operan con un esquema de precios muy superior.
 
-También podemos observar que la piscina destaca entre los extras, aumentando el precio en un 40%. Esto nos indica que en Sevilla, la piscina no es un simple complemento, sino un activo premium indiscutible que encarece drásticamente el precio de ese alojamiento.
+También podemos observar que la piscina destaca entre los extras,
+aumentando el precio en un 40%. Esto nos indica que en Sevilla, la
+piscina no es un simple complemento, sino un activo premium indiscutible
+que encarece drásticamente el precio de ese alojamiento.
 
-Por cada persona extra que cabe en el piso, el precio sube un 11,5%, y por cada baño adicional suma un 10,7% sobre el valor base. En el lado opuesto, alquilar una habitación privada o compartida penaliza el precio cayendo entre un 12% y un 52%.
+Por cada persona extra que cabe en el piso, el precio sube un 11,5%, y
+por cada baño adicional suma un 10,7% sobre el valor base. En el lado
+opuesto, alquilar una habitación privada o compartida penaliza el precio
+cayendo entre un 12% y un 52%.
 
-Podemos observar en la imagen que el modelo arroja un coeficiente negativo para el aire acondicionado (además de ser estadísticamente no significativo, como vimos en el summary anterior). Esto es debido a que en Sevilla el aire acondicionado está presente en casi el 95% de los alojamientos por lo que su presencia ya no sube el precio (es un requisito básico), pero los pisos que explícitamente lo anuncian como su gran extra suelen ser de gama media-baja intentando destacar, mientras que los pisos de gama alta esto lo dan por hecho.
+Podemos observar en la imagen que el modelo arroja un coeficiente
+negativo para el aire acondicionado (además de ser estadísticamente no
+significativo, como vimos en el summary anterior). Esto es debido a que
+en Sevilla el aire acondicionado está presente en casi el 95% de los
+alojamientos por lo que su presencia ya no sube el precio (es un
+requisito básico), pero los pisos que explícitamente lo anuncian como su
+gran extra suelen ser de gama media-baja intentando destacar, mientras
+que los pisos de gama alta esto lo dan por hecho.
 
 ### 4.2.4 Detección de anomalías
 
@@ -907,11 +1301,22 @@ print("--- Top 10 Oportunidades ---")
 print(top_chollos)
 ```
 
-En la gráfica anterior tenemos la proyección del "Precio Justo" contra el "Precio Real", la línea diagonal roja representa el equilibrio del mercado perfecto. 
+En la gráfica anterior tenemos la proyección del "Precio Justo" contra
+el "Precio Real", la línea diagonal roja representa el equilibrio del
+mercado perfecto.
 
-Los puntos que nos encontramos muy por encima de la diagonal son alojamientos cuyo precio real excede lo que sus características objetivas justifican. Se pueden ver casos extremos en el barrio de Feria, donde pisos que deberían costar 127€ se ofertan a 950€. Esto es propio de especulación agresiva o eventos puntuales donde aprovechan la demanda turística.
+Los puntos que nos encontramos muy por encima de la diagonal son
+alojamientos cuyo precio real excede lo que sus características
+objetivas justifican. Se pueden ver casos extremos en el barrio de
+Feria, donde pisos que deberían costar 127€ se ofertan a 950€. Esto es
+propio de especulación agresiva o eventos puntuales donde aprovechan la
+demanda turística.
 
-Por debajo de la línea nos encontramos propiedades en La Florida y San Bartolomé con precios reales de 50 o 60 euros cuando su valoración matemática debería rondar los 300 o 400 euros. Esto puede deberse a errores en el precio por parte del anfitrión o estrategias de mercado para ganar las primeras valoraciones.
+Por debajo de la línea nos encontramos propiedades en La Florida y San
+Bartolomé con precios reales de 50 o 60 euros cuando su valoración
+matemática debería rondar los 300 o 400 euros. Esto puede deberse a
+errores en el precio por parte del anfitrión o estrategias de mercado
+para ganar las primeras valoraciones.
 
 ### 4.2.6 Modelo avanzado con iteracciones
 
@@ -928,17 +1333,49 @@ coef_interaccion <- summary(modelo_interaccion)$coefficients
 coef_interaccion[grep("pool", row.names(coef_interaccion)), ]
 ```
 
-En este apartado planteamos la hipótesis de que el valor de un servicio como es la piscina no es constante, sino que depende de la tipología del alojamiento, es decir, ¿paga el cliente lo mismo por una piscina privada que por una comunitaria cuando alquila una habitación?
+En este apartado planteamos la hipótesis de que el valor de un servicio
+como es la piscina no es constante, sino que depende de la tipología del
+alojamiento, es decir, ¿paga el cliente lo mismo por una piscina privada
+que por una comunitaria cuando alquila una habitación?
 
-Para ello hemos introducido en el modelo un término de iteración **has_pool x room_type**. Como vemos en los resultados, el coeficiente base de contar con piscina (has_pool) arroja un valor de 0.327. Esto significa que, para la categoría de referencia (el apartamento completo estándar), la piscina es un diferenciador absoluto que eleva el precio base de la propiedad en un 38,7% (exp(0.327)−1).
+Para ello hemos introducido en el modelo un término de iteración
+**has_pool x room_type**. Como vemos en los resultados, el coeficiente
+base de contar con piscina (has_pool) arroja un valor de 0.327. Esto
+significa que, para la categoría de referencia (el apartamento completo
+estándar), la piscina es un diferenciador absoluto que eleva el precio
+base de la propiedad en un 38,7% (exp(0.327)−1).
 
-Si observamos los coeficientes de interacción, el modelo revela dinámicas de mercado radicalmente distintas según el tipo de producto:
+Si observamos los coeficientes de interacción, el modelo revela
+dinámicas de mercado radicalmente distintas según el tipo de producto:
 
-Por un lado, encontramos una clara anomalía en las habitaciones de hotel, donde vemos un coeficiente de interacción fuertemente negativo (−0.593) y estadísticamente significativo (p<0.05). Esto indica que el modelo penaliza severamente esta combinación. Al sumar el efecto base y la interacción, descubrimos que los hoteles con piscina son porcentualmente más baratos que los que no la tienen. Esto confirma que la categoría hotelera en Airbnb agrupa dos realidades opuestas: los "Hoteles Boutique" del centro histórico (carísimos, pero sin espacio físico para piscina) y cadenas hoteleras u hostales de la periferia (con piscina, pero con precios base mucho más bajos), rompiendo la lógica residencial del dataset.
+Por un lado, encontramos una clara anomalía en las habitaciones de
+hotel, donde vemos un coeficiente de interacción fuertemente negativo
+(−0.593) y estadísticamente significativo (p\<0.05). Esto indica que el
+modelo penaliza severamente esta combinación. Al sumar el efecto base y
+la interacción, descubrimos que los hoteles con piscina son
+porcentualmente más baratos que los que no la tienen. Esto confirma que
+la categoría hotelera en Airbnb agrupa dos realidades opuestas: los
+"Hoteles Boutique" del centro histórico (carísimos, pero sin espacio
+físico para piscina) y cadenas hoteleras u hostales de la periferia (con
+piscina, pero con precios base mucho más bajos), rompiendo la lógica
+residencial del dataset.
 
-Por otro lado, el hallazgo más revelador se encuentra en la habitación privada (Private room). Su coeficiente de interacción es netamente positivo (+0.246) y altamente significativo (p<0.01). Si sumamos este efecto al valor base de la piscina, descubrimos que una piscina en una habitación privada eleva su cotización en un 77,5% (exp(0.327+0.246)−1). Esto demuestra que alquilar una habitación con piscina cambia por completo la gama del producto, pasando de un alojamiento puramente económico a una experiencia de lujo compartido (ej. chalets residenciales), justificando un salto porcentual en el precio mucho mayor que en un piso completo.
+Por otro lado, el hallazgo más revelador se encuentra en la habitación
+privada (Private room). Su coeficiente de interacción es netamente
+positivo (+0.246) y altamente significativo (p\<0.01). Si sumamos este
+efecto al valor base de la piscina, descubrimos que una piscina en una
+habitación privada eleva su cotización en un 77,5% (exp(0.327+0.246)−1).
+Esto demuestra que alquilar una habitación con piscina cambia por
+completo la gama del producto, pasando de un alojamiento puramente
+económico a una experiencia de lujo compartido (ej. chalets
+residenciales), justificando un salto porcentual en el precio mucho
+mayor que en un piso completo.
 
-Como conclusión final, podemos afirmar que la regla de oro de la revalorización por piscina es robusta en el mercado residencial (disparando el precio de pisos y habitaciones), pero sufre un efecto inverso en la oferta hotelera listada en la plataforma, la cual obedece a dinámicas patrimoniales de ubicación en el casco antiguo.
+Como conclusión final, podemos afirmar que la regla de oro de la
+revalorización por piscina es robusta en el mercado residencial
+(disparando el precio de pisos y habitaciones), pero sufre un efecto
+inverso en la oferta hotelera listada en la plataforma, la cual obedece
+a dinámicas patrimoniales de ubicación en el casco antiguo.
 
 ```{r}
 # Calculamos el precio medio según si tiene piscina y el tipo de alojamiento
@@ -957,20 +1394,27 @@ ggplot(interaccion_plot, aes(x = room_type, y = precio_medio, group = has_pool, 
        x = "Tipo de Alojamiento", y = "Precio Medio Bruto (€)", color = "")
 ```
 
-Hemos generado un gráfico en el que podemos observar cómo varía el precio medio según si aparece piscina en cada tipo de alojamiento. 
+Hemos generado un gráfico en el que podemos observar cómo varía el
+precio medio según si aparece piscina en cada tipo de alojamiento.
 
-Observamos una clara correlación positiva en los segmentos residenciales, en ambos casos la línea azul se sitúa por encima de la roja. En cambio, como hemos visto antes en los hoteles, las líneas se cruzan y aparecen hoteles sin piscina con precios mucho más altos que los que tienen piscina.
+Observamos una clara correlación positiva en los segmentos
+residenciales, en ambos casos la línea azul se sitúa por encima de la
+roja. En cambio, como hemos visto antes en los hoteles, las líneas se
+cruzan y aparecen hoteles sin piscina con precios mucho más altos que
+los que tienen piscina.
 
 ### 4.2.7 Calculadora de precio justo
 
-Para finalizar el análisis, hemos transformado el modelo en una herramienta de tasación. Esta herramienta permite a los usuarios introducir las características de su alojamiento y obtener una estimación de valor basada en los 7300 registros que componen nuestro modelo.
+Para finalizar el análisis, hemos transformado el modelo en una
+herramienta de tasación. Esta herramienta permite a los usuarios
+introducir las características de su alojamiento y obtener una
+estimación de valor basada en los 7300 registros que componen nuestro
+modelo.
 
-A continuación, se presenta un caso de uso:
-  - Ubicación: Triana Oeste
-  - Tipología: Piso completo (Entire home/apt)
-  - Capacidad: 4 personas
-  - Extras: Piscina y aire acondicionado
-  - Calidad Esperada: Calificación de 4.8/5
+A continuación, se presenta un caso de uso: - Ubicación: Triana Oeste -
+Tipología: Piso completo (Entire home/apt) - Capacidad: 4 personas -
+Extras: Piscina y aire acondicionado - Calidad Esperada: Calificación de
+4.8/5
 
 ```{r}
 predecir_precio <- function(barrio, tipo, capacidad, baños, piscina, ac, rating) {
@@ -991,18 +1435,40 @@ predecir_precio <- function(barrio, tipo, capacidad, baños, piscina, ac, rating
 print(predecir_precio("Triana Oeste", "Entire home/apt", 4, 1, 1, 1, 4.8))
 ```
 
-El algoritmo, aplicando los coeficientes porcentuales del GLM, nos arroja un valor técnico de mercado en torno a los 169€ la noche.
+El algoritmo, aplicando los coeficientes porcentuales del GLM, nos
+arroja un valor técnico de mercado en torno a los 169€ la noche.
 
-Este valor funciona como precio base. A partir de aquí, el propietario puede tomar decisiones basadas en datos: si decide cobrar 250€, sabrá a ciencia cierta que está exigiendo un sobreprecio de casi el 48% respecto a la media de sus competidores directos, un sobrecoste que deberá justificar con intangibles (interiorismo de lujo, vistas, marca personal). Por el contrario, si decide salir a comercializarlo a 130€, tendrá la seguridad matemática de estar siendo agresivo en precio y estar situado en la zona de oportunidad del mercado, lo que muy probablemente le garantizará llenar el calendario de reservas rápidamente en sus primeros meses.
-
+Este valor funciona como precio base. A partir de aquí, el propietario
+puede tomar decisiones basadas en datos: si decide cobrar 250€, sabrá a
+ciencia cierta que está exigiendo un sobreprecio de casi el 48% respecto
+a la media de sus competidores directos, un sobrecoste que deberá
+justificar con intangibles (interiorismo de lujo, vistas, marca
+personal). Por el contrario, si decide salir a comercializarlo a 130€,
+tendrá la seguridad matemática de estar siendo agresivo en precio y
+estar situado en la zona de oportunidad del mercado, lo que muy
+probablemente le garantizará llenar el calendario de reservas
+rápidamente en sus primeros meses.
 
 ## 4.3. El "Efecto Giralda"
 
-Para abordar la hipótesis del 'Efecto Giralda', comenzamos analizando la distribución espacial de los precios como un continuo geográfico. Al prescindir de las fronteras administrativas de los barrios (que a menudo son arbitrarias y no reflejan la realidad del mercado turístico), buscamos observar si existe un patrón radial de encarecimiento que tenga como epicentro absoluto el principal monumento de la ciudad: la Catedral/Giralda.
+Para abordar la hipótesis del 'Efecto Giralda', comenzamos analizando la
+distribución espacial de los precios como un continuo geográfico. Al
+prescindir de las fronteras administrativas de los barrios (que a menudo
+son arbitrarias y no reflejan la realidad del mercado turístico),
+buscamos observar si existe un patrón radial de encarecimiento que tenga
+como epicentro absoluto el principal monumento de la ciudad: la
+Catedral/Giralda.
 
-Dado que el dataset original solo contenía coordenadas geográficas (latitud/longitud), era imprescindible transformarlas en una métrica de negocio utilizable.
+Dado que el dataset original solo contenía coordenadas geográficas
+(latitud/longitud), era imprescindible transformarlas en una métrica de
+negocio utilizable.
 
-Para ello, hemos aplicado la fórmula de Haversine, calculando la distancia de círculo máximo (en metros) entre cada alojamiento y la Catedral, teniendo en cuenta la curvatura de la Tierra. Gracias a esta nueva variable (distancia_giralda_m), hemos podido acotar el análisis a un radio operativo de 3.000 metros y generar la siguiente visualización de "Calor Radial":
+Para ello, hemos aplicado la fórmula de Haversine, calculando la
+distancia de círculo máximo (en metros) entre cada alojamiento y la
+Catedral, teniendo en cuenta la curvatura de la Tierra. Gracias a esta
+nueva variable (distancia_giralda_m), hemos podido acotar el análisis a
+un radio operativo de 3.000 metros y generar la siguiente visualización
+de "Calor Radial":
 
 ```{r}
 # --- Visualización "Diana" del Efecto Giralda ---
@@ -1070,9 +1536,25 @@ ggplot() +
        color = "Precio (€)")
 ```
 
-Como podemos observar en la visualización, los puntos más oscuros (precios más altos) se agrupan formando una densa nube alrededor del marcador amarillo de la Giralda. A medida que nuestra vista se desplaza hacia la periferia, los colores viran hacia tonos más claros, sugiriendo una caída del precio. Sin embargo, esta intuición visual no es suficiente para extraer conclusiones de negocio; necesitamos cuantificar matemáticamente esta pérdida de valor.
+Como podemos observar en la visualización, los puntos más oscuros
+(precios más altos) se agrupan formando una densa nube alrededor del
+marcador amarillo de la Giralda. A medida que nuestra vista se desplaza
+hacia la periferia, los colores viran hacia tonos más claros, sugiriendo
+una caída del precio. Sin embargo, esta intuición visual no es
+suficiente para extraer conclusiones de negocio; necesitamos cuantificar
+matemáticamente esta pérdida de valor.
 
-Una vez calculada la distancia exacta a la Giralda, procedemos a modelar el decaimiento del valor económico. Para evitar el sesgo introducido por los diferentes tipos de alojamiento, aislaremos el análisis exclusivamente a la categoría 'Entire home/apt' y limitaremos el radio de estudio a los primeros 3.000 metros (área de influencia turística). Dado que la caída de precios en bienes raíces rara vez es perfectamente lineal (el precio tiende a estabilizarse en la periferia), utilizaremos una técnica de Regresión No Lineal (LOESS) para capturar la curvatura real del mercado, complementada con un modelo lineal clásico para los primeros 1.000 metros y así responder con precisión a nuestra pregunta de negocio.
+Una vez calculada la distancia exacta a la Giralda, procedemos a modelar
+el decaimiento del valor económico. Para evitar el sesgo introducido por
+los diferentes tipos de alojamiento, aislaremos el análisis
+exclusivamente a la categoría 'Entire home/apt' y limitaremos el radio
+de estudio a los primeros 3.000 metros (área de influencia turística).
+Dado que la caída de precios en bienes raíces rara vez es perfectamente
+lineal (el precio tiende a estabilizarse en la periferia), utilizaremos
+una técnica de Regresión No Lineal (LOESS) para capturar la curvatura
+real del mercado, complementada con un modelo lineal clásico para los
+primeros 1.000 metros y así responder con precisión a nuestra pregunta
+de negocio.
 
 ```{r}
 # 1. Filtramos datos para comparar "manzanas con manzanas"
@@ -1108,10 +1590,27 @@ caida_por_100m <- caida_por_metro * 100
 print(paste("Caída del precio por cada 100 metros en el primer kilómetro:", round(caida_por_100m, 2), "€"))
 ```
 
-Respondiendo a la pregunta planteada: Sí, el 'Efecto Giralda' es un fenómeno cuantificable en el mercado de Airbnb en Sevilla. A través de la regresión local (LOESS), hemos descubierto que el comportamiento espacial del precio no es constante, sino que presenta dos fases diferenciadas:
+Respondiendo a la pregunta planteada: Sí, el 'Efecto Giralda' es un
+fenómeno cuantificable en el mercado de Airbnb en Sevilla. A través de
+la regresión local (LOESS), hemos descubierto que el comportamiento
+espacial del precio no es constante, sino que presenta dos fases
+diferenciadas:
 
-1.(0 - 1.000 metros): En el radio inmediato a la Catedral, la penalización por alejarse es severa. Nuestro modelo de regresión lineal aplicado a este segmento revela que el precio del alquiler de un apartamento completo cae, en promedio, 6,50 € por cada 100 metros que nos alejamos del epicentro. Esto demuestra que en el centro histórico, la ubicación extrema prima sobre el resto de variables.
+1.(0 - 1.000 metros): En el radio inmediato a la Catedral, la
+penalización por alejarse es severa. Nuestro modelo de regresión lineal
+aplicado a este segmento revela que el precio del alquiler de un
+apartamento completo cae, en promedio, 6,50 € por cada 100 metros que
+nos alejamos del epicentro. Esto demuestra que en el centro histórico,
+la ubicación extrema prima sobre el resto de variables.
 
-2.(\> 1.500 metros): A partir del kilómetro y medio, la curva roja (LOESS) frena su caída y se estabiliza casi por completo en un suelo de precios base. En este punto, la variable 'distancia a la Giralda' pierde todo su poder predictivo frente a las características internas del inmueble (tamaño, piscina, etc).
+2.(\> 1.500 metros): A partir del kilómetro y medio, la curva roja
+(LOESS) frena su caída y se estabiliza casi por completo en un suelo de
+precios base. En este punto, la variable 'distancia a la Giralda' pierde
+todo su poder predictivo frente a las características internas del
+inmueble (tamaño, piscina, etc).
 
-Impacto de Negocio: El sobrecoste de adquirir una vivienda a menos de 500 metros de la Giralda está justificado por una prima de facturación diaria asegurada. Sin embargo, más allá de la frontera del primer kilómetro, la estrategia óptima para un inversor no es buscar cercanía al centro, sino maximizar el equipamiento (amenities) del piso.
+Impacto de Negocio: El sobrecoste de adquirir una vivienda a menos de
+500 metros de la Giralda está justificado por una prima de facturación
+diaria asegurada. Sin embargo, más allá de la frontera del primer
+kilómetro, la estrategia óptima para un inversor no es buscar cercanía
+al centro, sino maximizar el equipamiento (amenities) del piso.
