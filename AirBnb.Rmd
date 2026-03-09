@@ -1,6 +1,11 @@
 ---
 title: "R Notebook - Airbnb Sevilla"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 # 1. Introducción y Objetivos
@@ -704,7 +709,7 @@ Hemos analizado un poco más en detalle las relaciones entre diferentes variable
 
 ```{r}
 # GRÁFICO 2: DISTRIBUCIÓN DE PRECIOS POR CLUSTER (K=5)
-ggplot(df_cluster, aes(x = df_cluster, y = price, fill = Cluster_11)) +
+ggplot(df_cluster, aes(x = Cluster, y = price, fill = Cluster)) +
   geom_boxplot(alpha = 0.8, outlier.color = "grey", outlier.size = 1) +
   scale_fill_brewer(palette = "Set1") +
   coord_flip() + # Barras horizontales
@@ -734,9 +739,9 @@ El analisis de dispersión de precios a través de los boxplots revela la estruc
 
 ```{r}
 # GRÁFICO 3: MATRIZ DE RENTABILIDAD
-ggplot(df_cluster, aes(x = reviews_per_month, y = price, color = df_cluster)) +
+ggplot(df_cluster, aes(x = reviews_per_month, y = price, color = Cluster)) +
   geom_point(alpha = 0.4) +
-  facet_wrap(~df_cluster, scales = "free_x") + 
+  facet_wrap(~Cluster, scales = "free_x") + 
   scale_color_brewer(palette = "Set1") +
   theme_minimal() +
   labs(title = "Matriz Precio vs Rotación",
